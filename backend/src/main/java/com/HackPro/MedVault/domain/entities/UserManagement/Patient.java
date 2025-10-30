@@ -16,7 +16,7 @@ import java.util.List;
 @Setter
 @Getter
 @Builder
-public class Patient extends Users {
+public class Patient extends User {
     @Column(unique = true, nullable = false)
     private String aadhaarNumber; // Encrypted
 

@@ -15,7 +15,7 @@ import java.util.List;
 @Setter
 @Getter
 @PrimaryKeyJoinColumn(name = "user_id")
-public class Doctor extends Users {
+public class Doctor extends User {
 
     @Column(unique = true, nullable = false)
     private String licenseNumber;
