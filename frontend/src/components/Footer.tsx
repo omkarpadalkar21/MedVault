@@ -26,7 +26,7 @@ const Footer = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <Shield className="w-8 h-8 text-accent" />
+              <Shield className="w-8 h-8 text-destructive" />
               <span className="text-2xl font-bold">MedVault</span>
             </div>
             <p className="text-primary-light/80 text-sm leading-relaxed mb-4">

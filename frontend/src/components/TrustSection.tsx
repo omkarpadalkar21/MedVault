@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Award, ShieldCheck, Zap } from "lucide-react";
 
 const stats = [
@@ -49,29 +49,33 @@ const TrustSection = () => {
         
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           {stats.map((stat, index) => (
-            <Card key={index} className="p-6 text-center bg-card border-border hover:shadow-elegant transition-all duration-300">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                <stat.icon className="w-8 h-8 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold text-card-foreground mb-2">{stat.title}</h3>
-              <p className="text-sm text-muted-foreground">{stat.description}</p>
+            <Card key={index} className="text-center bg-card border-border hover:shadow-elegant transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                  <stat.icon className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold text-card-foreground mb-2">{stat.title}</h3>
+                <p className="text-[1.1rem] text-muted-foreground">{stat.description}</p>
+              </CardContent>
             </Card>
           ))}
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
           {testimonials.map((testimonial, index) => (
-            <Card key={index} className="p-8 bg-white border-border shadow-elegant">
-              <div className="space-y-4">
-                <div className="text-4xl text-accent">"</div>
-                <p className="text-muted-foreground italic leading-relaxed">
-                  {testimonial.quote}
-                </p>
-                <div className="pt-4 border-t border-border">
-                  <p className="font-semibold text-foreground">{testimonial.author}</p>
-                  <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+            <Card key={index} className="bg-white border-border shadow-elegant">
+              <CardContent className="p-8">
+                <div className="space-y-4">
+                  <div className="text-4xl text-accent">"</div>
+                  <p className="text-muted-foreground italic leading-relaxed text-[1.125rem]">
+                    {testimonial.quote}
+                  </p>
+                  <div className="pt-4 border-t border-border">
+                    <p className="font-semibold text-foreground">{testimonial.author}</p>
+                    <p className="text-[1.1rem] text-muted-foreground">{testimonial.role}</p>
+                  </div>
                 </div>
-              </div>
+              </CardContent>
             </Card>
           ))}
         </div>
