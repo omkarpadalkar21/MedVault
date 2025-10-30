@@ -10,21 +10,21 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
-            <Shield className="w-8 h-8 text-primary" />
+            <Shield className="w-8 h-8 text-destructive" />
             <span className="text-xl font-bold text-foreground">MedVault</span>
           </div>
           
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+            <a href="#features" className="text-lg font-medium text-foreground hover:text-primary transition-colors">
               Features
             </a>
-            <a href="#for-patients" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+            <a href="#for-patients" className="text-lg font-medium text-foreground hover:text-primary transition-colors">
               For Patients
             </a>
-            <a href="#for-providers" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+            <a href="#for-providers" className="text-lg font-medium text-foreground hover:text-primary transition-colors">
               For Providers
             </a>
-            <a href="#security" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+            <a href="#security" className="text-lg font-medium text-foreground hover:text-primary transition-colors">
               Security
             </a>
           </div>
