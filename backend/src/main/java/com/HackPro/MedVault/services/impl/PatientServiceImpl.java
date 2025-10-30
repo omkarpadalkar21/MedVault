@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -42,7 +43,10 @@ public class PatientServiceImpl implements PatientService {
 
         log.debug("Patient profile found for: {}", patient.getEmail());
 
-        // Map entity to DTO (exclude sensitive fields like Aadhaar)
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime createdAt = patient.getCreatedAt() != null ? patient.getCreatedAt() : now;
+        LocalDateTime updatedAt = patient.getUpdatedAt() != null ? patient.getUpdatedAt() : now;
+
         return PatientResponseDto.builder()
                 .id(patient.getId())
                 .email(patient.getEmail())
@@ -59,9 +63,8 @@ public class PatientServiceImpl implements PatientService {
                 .chronicConditions(patient.getChronicConditions())
                 .emergencyContactName(patient.getEmergencyContactName())
                 .emergencyContactPhone(patient.getEmergencyContactPhone())
-                // Handle null timestamps for existing users
-                .createdAt(patient.getCreatedAt())
-                .updatedAt(patient.getUpdatedAt())
+                .createdAt(createdAt)  // From User parent
+                .updatedAt(updatedAt)  // From User parent
                 .build();
     }
 }
