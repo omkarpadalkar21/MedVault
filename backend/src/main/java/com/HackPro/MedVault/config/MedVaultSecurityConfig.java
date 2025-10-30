@@ -56,7 +56,8 @@ public class MedVaultSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers(
-                                "/api/v1/auth/register/**",
+                                "/api/v1/auth/register/patient",
+                                "/api/v1/auth/register/doctor",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/auth/reset-password",

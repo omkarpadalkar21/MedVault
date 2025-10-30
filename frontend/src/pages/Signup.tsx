@@ -32,10 +32,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/components/ui/use-toast";
-import axios from "axios";
-
-// API Base URL
-const API_BASE_URL = "http://localhost:8080";
+import apiClient from "@/services/api";
 
 // Step 1: Account creation schema
 const step1Schema = z
@@ -182,8 +179,8 @@ export default function Signup() {
     if (!step1Data || !step2Data) return;
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/v1/auth/register/patient`,
+      const response = await apiClient.post(
+        "/api/v1/auth/register/patient",
         {
           // Step 1 data
           email: step1Data.email,
@@ -213,23 +210,28 @@ export default function Signup() {
     if (!step1Data || !step2Data) return;
 
     try {
-      // Temporary: Using patient endpoint for healthcare providers
-      // TODO: Update this when healthcare provider endpoint is ready
-      const response = await axios.post(
-        `${API_BASE_URL}/api/v1/auth/register/healthcare-provider`,
+      const response = await apiClient.post(
+        "/api/v1/auth/register/doctor",
         {
           // Step 1 data
           email: step1Data.email,
           password: step1Data.password,
           confirmPassword: step1Data.confirmPassword,
           // Step 3 data
-          ...values,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          phoneNumber: values.phoneNumber,
+          specialization: values.specialization,
+          licenseNumber: values.licenseNumber,
+          hospitalAffiliation: values.hospitalAffiliation,
+          yearsOfExperience: parseInt(values.yearsOfExperience),
+          address: values.address,
         }
       );
 
       toast({
         title: "Account created",
-        description: response.data.message || "Welcome to MedVault!",
+        description: response.data.message || "Welcome to MedVault, Doctor!",
       });
 
       navigate("/login");
