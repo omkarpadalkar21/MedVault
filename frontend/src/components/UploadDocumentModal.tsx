@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,36 +6,42 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from './ui/dialog';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select';
-import { Textarea } from './ui/textarea';
-import { useToast } from './ui/use-toast';
-import { Upload, FileText, X } from 'lucide-react';
+} from "./ui/dialog";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { useToast } from "./ui/use-toast";
+import { Upload, FileText, X, Loader2 } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
 
 interface UploadDocumentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onDocumentAdded?: () => void;
+}
+
+interface ProcessedDocument {
+  summary: string;
+  anomalies: string[];
+  category: string;
+  documentType: string;
 }
 
 export default function UploadDocumentModal({
   open,
   onOpenChange,
+  onDocumentAdded,
 }: UploadDocumentModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [documentTitle, setDocumentTitle] = useState('');
-  const [documentCategory, setDocumentCategory] = useState('');
-  const [documentType, setDocumentType] = useState('');
-  const [notes, setNotes] = useState('');
+  const [documentTitle, setDocumentTitle] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,25 +50,34 @@ export default function UploadDocumentModal({
       // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         toast({
-          title: 'File too large',
-          description: 'Please select a file smaller than 10MB',
-          variant: 'destructive',
+          title: "File too large",
+          description: "Please select a file smaller than 10MB",
+          variant: "destructive",
         });
         return;
       }
 
       // Validate file type
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+      const allowedTypes = [
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "image/jpg",
+      ];
       if (!allowedTypes.includes(file.type)) {
         toast({
-          title: 'Invalid file type',
-          description: 'Please upload PDF, JPG, or PNG files only',
-          variant: 'destructive',
+          title: "Invalid file type",
+          description: "Please upload PDF, JPG, or PNG files only",
+          variant: "destructive",
         });
         return;
       }
 
       setSelectedFile(file);
+      // Auto-fill title from filename if empty
+      if (!documentTitle) {
+        setDocumentTitle(file.name.replace(/\.[^/.]+$/, ""));
+      }
     }
   };
 
@@ -71,11 +86,11 @@ export default function UploadDocumentModal({
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !documentTitle || !documentCategory || !documentType) {
+    if (!selectedFile || !documentTitle.trim()) {
       toast({
-        title: 'Missing information',
-        description: 'Please fill in all required fields',
-        variant: 'destructive',
+        title: "Missing information",
+        description: "Please select a file and provide a title",
+        variant: "destructive",
       });
       return;
     }
@@ -83,56 +98,104 @@ export default function UploadDocumentModal({
     setUploading(true);
 
     try {
-      // Create FormData for file upload
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('title', documentTitle);
-      formData.append('category', documentCategory);
-      formData.append('type', documentType);
-      formData.append('notes', notes);
+      // Step 1: Upload file to Supabase Storage
+      const userId = localStorage.getItem("userId") || "anonymous";
+      const timestamp = Date.now();
+      const fileExt = selectedFile.name.split(".").pop();
+      const fileName = `${userId}/${timestamp}-${documentTitle.replace(
+        /\s+/g,
+        "_"
+      )}.${fileExt}`;
 
-      // TODO: Replace with your actual API endpoint
-      // const response = await axios.post('API_BASE_URL/api/v1/documents/upload', formData, {
-      //   headers: {
-      //     'Content-Type': 'multipart/form-data',
-      //     Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-      //   },
-      // });
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("medical-documents")
+        .upload(fileName, selectedFile, {
+          cacheControl: "3600",
+          upsert: false,
+        });
 
-      // Simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (uploadError) throw uploadError;
 
       toast({
-        title: 'Upload successful',
-        description: 'Your document has been uploaded successfully',
+        title: "File uploaded",
+        description: "Processing document with AI...",
+      });
+
+      setProcessing(true);
+
+      // Step 2: Get public URL
+      const { data: urlData } = supabase.storage
+        .from("medical-documents")
+        .getPublicUrl(fileName);
+
+      // Step 3: Send to n8n for processing
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          documentTitle,
+          fileUrl: urlData.publicUrl,
+          fileName: fileName,
+          userId: userId,
+          uploadTimestamp: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to process document");
+
+      const processedData: ProcessedDocument = await response.json();
+
+      // Step 4: Save to database with processed data
+      // TODO: Replace with your actual API endpoint
+      // await axios.post('API_BASE_URL/api/v1/documents', {
+      //   title: documentTitle,
+      //   fileUrl: urlData.publicUrl,
+      //   fileName: fileName,
+      //   category: processedData.category,
+      //   documentType: processedData.documentType,
+      //   summary: processedData.summary,
+      //   anomalies: processedData.anomalies,
+      //   userId: userId,
+      // });
+
+      toast({
+        title: "Success!",
+        description: `Document processed successfully. Category: ${processedData.category}, Type: ${processedData.documentType}`,
       });
 
       // Reset form
       setSelectedFile(null);
-      setDocumentTitle('');
-      setDocumentCategory('');
-      setDocumentType('');
-      setNotes('');
+      setDocumentTitle("");
       onOpenChange(false);
+
+      // Callback to refresh documents list
+      onDocumentAdded?.();
     } catch (error: any) {
+      console.error("Upload error:", error);
       toast({
-        title: 'Upload failed',
-        description: error.response?.data?.message || 'Failed to upload document',
-        variant: 'destructive',
+        title: "Upload failed",
+        description: error.message || "Failed to upload and process document",
+        variant: "destructive",
       });
     } finally {
       setUploading(false);
+      setProcessing(false);
     }
   };
+
+  const isProcessing = uploading || processing;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
-          <DialogTitle>Upload Prescription/Report</DialogTitle>
+          <DialogTitle>Upload Medical Document</DialogTitle>
           <DialogDescription>
-            Upload your medical documents, prescriptions, or lab reports. Accepted formats: PDF, JPG, PNG
-            (Max size: 10MB)
+            Upload your prescription or medical report. Our AI will
+            automatically analyze and categorize it for you. (PDF, JPG, PNG -
+            Max 10MB)
           </DialogDescription>
         </DialogHeader>
 
@@ -148,6 +211,7 @@ export default function UploadDocumentModal({
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={handleFileChange}
                   className="hidden"
+                  disabled={isProcessing}
                 />
                 <Label
                   htmlFor="file"
@@ -168,7 +232,9 @@ export default function UploadDocumentModal({
               <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/50">
                 <FileText className="w-8 h-8 text-primary flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{selectedFile.name}</p>
+                  <p className="text-sm font-medium truncate">
+                    {selectedFile.name}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {(selectedFile.size / 1024).toFixed(2)} KB
                   </p>
@@ -178,6 +244,7 @@ export default function UploadDocumentModal({
                   size="sm"
                   onClick={handleRemoveFile}
                   className="flex-shrink-0"
+                  disabled={isProcessing}
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -193,72 +260,46 @@ export default function UploadDocumentModal({
               placeholder="e.g., Blood Test Results - Oct 2025"
               value={documentTitle}
               onChange={(e) => setDocumentTitle(e.target.value)}
+              disabled={isProcessing}
             />
           </div>
 
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category">Category *</Label>
-            <Select value={documentCategory} onValueChange={setDocumentCategory}>
-              <SelectTrigger id="category">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="General">General</SelectItem>
-                <SelectItem value="Cardiology">Cardiology</SelectItem>
-                <SelectItem value="Neurology">Neurology</SelectItem>
-                <SelectItem value="Lab">Lab</SelectItem>
-                <SelectItem value="Pharmacy">Pharmacy</SelectItem>
-                <SelectItem value="Endocrinology">Endocrinology</SelectItem>
-                <SelectItem value="Immunology">Immunology</SelectItem>
-                <SelectItem value="Orthopedics">Orthopedics</SelectItem>
-                <SelectItem value="Radiology">Radiology</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Document Type */}
-          <div className="space-y-2">
-            <Label htmlFor="type">Document Type *</Label>
-            <Select value={documentType} onValueChange={setDocumentType}>
-              <SelectTrigger id="type">
-                <SelectValue placeholder="Select document type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Prescription">Prescription</SelectItem>
-                <SelectItem value="Lab Report">Lab Report</SelectItem>
-                <SelectItem value="Consultation">Consultation</SelectItem>
-                <SelectItem value="Report">Report</SelectItem>
-                <SelectItem value="Follow-up">Follow-up</SelectItem>
-                <SelectItem value="Treatment Plan">Treatment Plan</SelectItem>
-                <SelectItem value="Imaging">Imaging</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Notes (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (Optional)</Label>
-            <Textarea
-              id="notes"
-              placeholder="Add any additional notes or details..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-            />
-          </div>
+          {processing && (
+            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-900">
+                  AI is analyzing your document...
+                </p>
+                <p className="text-xs text-blue-700">
+                  Extracting information, detecting anomalies, and categorizing
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={uploading}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isProcessing}
+          >
             Cancel
           </Button>
           <Button
             onClick={handleUpload}
-            disabled={uploading}
+            disabled={isProcessing}
             className="bg-[#00BFA5] hover:bg-[#00A892]"
           >
-            {uploading ? 'Uploading...' : 'Upload Document'}
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {uploading ? "Uploading..." : "Processing..."}
+              </>
+            ) : (
+              "Upload & Process"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
