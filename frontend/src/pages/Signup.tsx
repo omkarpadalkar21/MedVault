@@ -3,24 +3,45 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
+
+// API Base URL
+const API_BASE_URL = "http://localhost:8080";
 
 // Step 1: Account creation schema
 const step1Schema = z
   .object({
-    name: z.string().min(2, "Enter your full name"),
     email: z.string().email("Enter a valid email"),
-    password: z.string().min(6, "Minimum 6 characters"),
-    confirmPassword: z.string().min(6, "Minimum 6 characters"),
+    password: z.string().min(12, "Minimum 12 characters required"),
+    confirmPassword: z.string().min(12, "Minimum 12 characters required"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -35,14 +56,29 @@ const step2Schema = z.object({
   dateOfBirth: z.string().min(1, "Date of birth required"),
   gender: z.enum(["MALE", "FEMALE", "OTHER"]),
   aadhaarNumber: z.string().regex(/^\d{12}$/, "Aadhaar must be 12 digits"),
-  bloodGroup: z.enum(["O_POSITIVE", "O_NEGATIVE", "A_POSITIVE", "A_NEGATIVE", "B_POSITIVE", "B_NEGATIVE", "AB_POSITIVE", "AB_NEGATIVE"]),
+  bloodGroup: z.enum([
+    "O_POSITIVE",
+    "O_NEGATIVE",
+    "A_POSITIVE",
+    "A_NEGATIVE",
+    "B_POSITIVE",
+    "B_NEGATIVE",
+    "AB_POSITIVE",
+    "AB_NEGATIVE",
+  ]),
   allergies: z.string().optional(),
   chronicConditions: z.string().optional(),
   address: z.string().min(1, "Address required"),
   emergencyContactName: z.string().min(1, "Emergency contact name required"),
-  emergencyContactPhone: z.string().min(10, "Valid emergency phone required"),
-  termsAccepted: z.boolean().refine((val) => val === true, "You must accept the terms"),
-  privacyPolicyAccepted: z.boolean().refine((val) => val === true, "You must accept the privacy policy"),
+  emergencyContactPhone: z
+    .string()
+    .min(10, "Valid emergency phone required"),
+  termsAccepted: z.boolean().refine((val) => val === true, {
+    message: "You must accept the terms",
+  }),
+  privacyPolicyAccepted: z.boolean().refine((val) => val === true, {
+    message: "You must accept the privacy policy",
+  }),
 });
 
 type Step1Values = z.infer<typeof step1Schema>;
@@ -54,7 +90,11 @@ export default function Signup() {
 
   const step1Form = useForm<Step1Values>({
     resolver: zodResolver(step1Schema),
-    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: {
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
   });
 
   const step2Form = useForm<Step2Values>({
@@ -89,18 +129,29 @@ export default function Signup() {
     if (!step1Data) return;
 
     try {
-      await axios.post("/api/v1/auth/register/patient", {
-        email: step1Data.email,
-        password: step1Data.password,
-        confirmPassword: step1Data.confirmPassword,
-        ...values,
+      const response = await axios.post(
+        `${API_BASE_URL}/api/v1/auth/register/patient`,
+        {
+          // Step 1 data
+          email: step1Data.email,
+          password: step1Data.password,
+          confirmPassword: step1Data.confirmPassword,
+          // Step 2 data
+          ...values,
+        }
+      );
+
+      toast({
+        title: "Account created",
+        description: response.data.message || "Welcome to MedVault!",
       });
-      toast({ title: "Account created", description: `Welcome to MedVault, ${step1Data.name}` });
+
       navigate("/login");
     } catch (error: any) {
       toast({
         title: "Registration failed",
-        description: error.response?.data?.message || "Something went wrong",
+        description:
+          error.response?.data?.message || "Something went wrong",
         variant: "destructive",
       });
     }
@@ -116,22 +167,12 @@ export default function Signup() {
           <p className="text-sm text-muted-foreground">Step {step} of 2</p>
         </CardHeader>
         <CardContent>
-          {step === 1 && (
+          {step === 1 ? (
             <Form {...step1Form}>
-              <form onSubmit={step1Form.handleSubmit(onStep1Submit)} className="space-y-4">
-                <FormField
-                  control={step1Form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Label htmlFor="name">Full name</Label>
-                      <FormControl>
-                        <Input id="name" placeholder="Jane Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <form
+                onSubmit={step1Form.handleSubmit(onStep1Submit)}
+                className="space-y-4"
+              >
                 <FormField
                   control={step1Form.control}
                   name="email"
@@ -139,12 +180,18 @@ export default function Signup() {
                     <FormItem>
                       <Label htmlFor="email">Email</Label>
                       <FormControl>
-                        <Input id="email" type="email" placeholder="you@example.com" {...field} />
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="you@example.com"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={step1Form.control}
                   name="password"
@@ -152,12 +199,18 @@ export default function Signup() {
                     <FormItem>
                       <Label htmlFor="password">Password</Label>
                       <FormControl>
-                        <Input id="password" type="password" placeholder="••••••••" {...field} />
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="••••••••••••"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={step1Form.control}
                   name="confirmPassword"
@@ -165,20 +218,30 @@ export default function Signup() {
                     <FormItem>
                       <Label htmlFor="confirmPassword">Confirm password</Label>
                       <FormControl>
-                        <Input id="confirmPassword" type="password" placeholder="••••••••" {...field} />
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          placeholder="••••••••••••"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full">Next</Button>
+
+                <Button type="submit" className="w-full">
+                  Next
+                </Button>
               </form>
             </Form>
-          )}
-
-          {step === 2 && (
+          ) : (
             <Form {...step2Form}>
-              <form onSubmit={step2Form.handleSubmit(onStep2Submit)} className="space-y-4">
+              <form
+                onSubmit={step2Form.handleSubmit(onStep2Submit)}
+                className="space-y-4"
+              >
+                {/* Personal Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={step2Form.control}
@@ -193,6 +256,7 @@ export default function Signup() {
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={step2Form.control}
                     name="lastName"
@@ -216,12 +280,17 @@ export default function Signup() {
                       <FormItem>
                         <FormLabel>Phone Number</FormLabel>
                         <FormControl>
-                          <Input type="tel" placeholder="1234567890" {...field} />
+                          <Input
+                            type="tel"
+                            placeholder="+919876543210"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={step2Form.control}
                     name="dateOfBirth"
@@ -244,43 +313,50 @@ export default function Signup() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Gender</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select gender" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="MALE" className="focus:bg-primary focus:text-primary-foreground">Male</SelectItem>
-                            <SelectItem value="FEMALE" className="focus:bg-primary focus:text-primary-foreground">Female</SelectItem>
-                            <SelectItem value="OTHER" className="focus:bg-primary focus:text-primary-foreground">Other</SelectItem>
+                            <SelectItem value="MALE">Male</SelectItem>
+                            <SelectItem value="FEMALE">Female</SelectItem>
+                            <SelectItem value="OTHER">Other</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={step2Form.control}
                     name="bloodGroup"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Blood Group</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select blood group" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="O_POSITIVE" className="focus:bg-primary focus:text-primary-foreground">O+</SelectItem>
-                            <SelectItem value="O_NEGATIVE" className="focus:bg-primary focus:text-primary-foreground">O-</SelectItem>
-                            <SelectItem value="A_POSITIVE" className="focus:bg-primary focus:text-primary-foreground">A+</SelectItem>
-                            <SelectItem value="A_NEGATIVE" className="focus:bg-primary focus:text-primary-foreground">A-</SelectItem>
-                            <SelectItem value="B_POSITIVE" className="focus:bg-primary focus:text-primary-foreground">B+</SelectItem>
-                            <SelectItem value="B_NEGATIVE" className="focus:bg-primary focus:text-primary-foreground">B-</SelectItem>
-                            <SelectItem value="AB_POSITIVE" className="focus:bg-primary focus:text-primary-foreground">AB+</SelectItem>
-                            <SelectItem value="AB_NEGATIVE" className="focus:bg-primary focus:text-primary-foreground">AB-</SelectItem>
+                            <SelectItem value="O_POSITIVE">O+</SelectItem>
+                            <SelectItem value="O_NEGATIVE">O-</SelectItem>
+                            <SelectItem value="A_POSITIVE">A+</SelectItem>
+                            <SelectItem value="A_NEGATIVE">A-</SelectItem>
+                            <SelectItem value="B_POSITIVE">B+</SelectItem>
+                            <SelectItem value="B_NEGATIVE">B-</SelectItem>
+                            <SelectItem value="AB_POSITIVE">AB+</SelectItem>
+                            <SelectItem value="AB_NEGATIVE">AB-</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -289,6 +365,7 @@ export default function Signup() {
                   />
                 </div>
 
+                {/* Identity Verification */}
                 <FormField
                   control={step2Form.control}
                   name="aadhaarNumber"
@@ -296,21 +373,30 @@ export default function Signup() {
                     <FormItem>
                       <FormLabel>Aadhaar Number</FormLabel>
                       <FormControl>
-                        <Input placeholder="123456789012" maxLength={12} {...field} />
+                        <Input
+                          type="text"
+                          placeholder="123456789012"
+                          maxLength={12}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
+                {/* Medical Information */}
                 <FormField
                   control={step2Form.control}
                   name="allergies"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Allergies (optional)</FormLabel>
+                      <FormLabel>Allergies (Optional)</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Peanuts, Penicillin, etc." {...field} />
+                        <Textarea
+                          placeholder="Peanuts, Penicillin, etc."
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -322,15 +408,19 @@ export default function Signup() {
                   name="chronicConditions"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Chronic Conditions (optional)</FormLabel>
+                      <FormLabel>Chronic Conditions (Optional)</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Diabetes, Hypertension, etc." {...field} />
+                        <Textarea
+                          placeholder="Diabetes, Hypertension, etc."
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
+                {/* Contact Information */}
                 <FormField
                   control={step2Form.control}
                   name="address"
@@ -338,7 +428,10 @@ export default function Signup() {
                     <FormItem>
                       <FormLabel>Address</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Your full address" {...field} />
+                        <Textarea
+                          placeholder="123 Main Street, City, State, PIN"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -359,6 +452,7 @@ export default function Signup() {
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={step2Form.control}
                     name="emergencyContactPhone"
@@ -366,7 +460,11 @@ export default function Signup() {
                       <FormItem>
                         <FormLabel>Emergency Contact Phone</FormLabel>
                         <FormControl>
-                          <Input type="tel" placeholder="9876543210" {...field} />
+                          <Input
+                            type="tel"
+                            placeholder="+919876543210"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -374,16 +472,25 @@ export default function Signup() {
                   />
                 </div>
 
+                {/* Terms and Conditions */}
                 <FormField
                   control={step2Form.control}
                   name="termsAccepted"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                       <FormControl>
-                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>I accept the Terms of Service</FormLabel>
+                        <FormLabel>
+                          I accept the{" "}
+                          <a href="/terms" className="text-primary underline">
+                            Terms of Service
+                          </a>
+                        </FormLabel>
                         <FormMessage />
                       </div>
                     </FormItem>
@@ -396,10 +503,18 @@ export default function Signup() {
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                       <FormControl>
-                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
                       </FormControl>
                       <div className="space-y-1 leading-none">
-                        <FormLabel>I accept the Privacy Policy</FormLabel>
+                        <FormLabel>
+                          I accept the{" "}
+                          <a href="/privacy" className="text-primary underline">
+                            Privacy Policy
+                          </a>
+                        </FormLabel>
                         <FormMessage />
                       </div>
                     </FormItem>
@@ -407,10 +522,17 @@ export default function Signup() {
                 />
 
                 <div className="flex gap-4">
-                  <Button type="button" variant="outline" onClick={() => setStep(1)} className="w-full">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep(1)}
+                    className="w-full"
+                  >
                     Back
                   </Button>
-                  <Button type="submit" className="w-full">Register</Button>
+                  <Button type="submit" className="w-full">
+                    Create Account
+                  </Button>
                 </div>
               </form>
             </Form>
@@ -418,7 +540,10 @@ export default function Signup() {
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
-            Already have an account? <Link to="/login" className="text-primary hover:underline">Sign in</Link>
+            Already have an account?{" "}
+            <Link to="/login" className="text-primary hover:underline">
+              Sign in
+            </Link>
           </p>
         </CardFooter>
       </Card>
