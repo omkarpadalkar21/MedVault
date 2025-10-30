@@ -1,6 +1,6 @@
 package com.HackPro.MedVault.domain.entities;
 
-import com.HackPro.MedVault.domain.entities.UserManagement.Users;
+import com.HackPro.MedVault.domain.entities.UserManagement.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -22,7 +22,7 @@ public class Notification {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private Users user;
+    private User user;
 
     @Enumerated(EnumType.STRING)
     private NotificationType type; // ACCESS_REQUEST, ACCESS_GRANTED, EMERGENCY_ACCESS, A

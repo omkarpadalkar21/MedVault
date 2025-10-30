@@ -1,7 +1,7 @@
 package com.HackPro.MedVault.domain.entities.MedicalRecords;
 
 import com.HackPro.MedVault.domain.entities.UserManagement.Patient;
-import com.HackPro.MedVault.domain.entities.UserManagement.Users;
+import com.HackPro.MedVault.domain.entities.UserManagement.User;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -50,7 +50,7 @@ public class MedicalRecord {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploaded_by")
-    private Users uploadedBy;
+    private User uploadedBy;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
