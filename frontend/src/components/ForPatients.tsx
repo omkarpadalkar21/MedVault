@@ -29,7 +29,7 @@ const benefits = [
 
 const ForPatients = () => {
   return (
-    <section className="py-20 bg-gradient-subtle">
+    <section id="for-patients" className="py-20 bg-gradient-subtle">
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="order-2 md:order-1">

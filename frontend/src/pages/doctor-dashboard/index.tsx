@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Calendar, MessageSquare, Settings, ChevronDown, FileText, Activity, ChevronRight, ChevronLeft, Shield } from "lucide-react";
+import { Search, Calendar, MessageSquare, Settings, ChevronDown, FileText, Activity, ChevronRight, ChevronLeft, Shield, LogOut } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Patient {
   id: string;
@@ -113,14 +114,14 @@ export default function DoctorDashboard() {
           )}
         </button>
 
-        <div className={`flex items-center gap-2 mb-8 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+        <Link to="/" className={`flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity ${isSidebarCollapsed ? 'justify-center' : ''}`}>
           {!isSidebarCollapsed && (
             <Shield className="w-8 h-8 text-red-500" />
           )}
           <div className={`text-xl font-semibold ${isSidebarCollapsed ? '' : ''}`}>
             {isSidebarCollapsed ? "M+" : "MedVault"}
           </div>
-        </div>
+        </Link>
 
         {/* Doctor Profile */}
         <div className={`flex flex-col items-center mb-8 ${isSidebarCollapsed ? 'space-y-2' : ''}`}>
@@ -146,7 +147,23 @@ export default function DoctorDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 flex flex-col">
+        {/* Header */}
+        <header className="bg-white border-b px-8 py-4 flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">Doctor Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <button className="p-2 hover:bg-muted rounded-lg">
+              <Settings className="w-5 h-5" />
+            </button>
+            <Link to="/">
+              <button className="p-2 hover:bg-muted rounded-lg">
+                <LogOut className="w-5 h-5" />
+              </button>
+            </Link>
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-auto p-8">
         {/* Header Tabs */}
         <div className="flex gap-8 mb-8 border-b">
           <button
@@ -223,6 +240,7 @@ export default function DoctorDashboard() {
               </CardContent>
             </Card>
           </div>
+        </div>
         </div>
       </main>
     </div>
