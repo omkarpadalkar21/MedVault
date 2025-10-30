@@ -32,7 +32,7 @@ public class AccessPermission {
     private Doctor doctor;
 
     @Enumerated(EnumType.STRING)
-    private PermissionLevelk permissionLevel; // FULL_ACCESS, LIMITED_ACCESS, NO_ACCESS
+    private PermissionLevel permissionLevel; // FULL_ACCESS, LIMITED_ACCESS, NO_ACCESS
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date validFrom;

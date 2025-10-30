@@ -1,6 +1,8 @@
 package com.HackPro.MedVault.config;
 
 import com.HackPro.MedVault.repositories.DoctorRepository;
+import com.HackPro.MedVault.services.AadhaarVerificationService;
+import com.HackPro.MedVault.services.MedVaultUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;

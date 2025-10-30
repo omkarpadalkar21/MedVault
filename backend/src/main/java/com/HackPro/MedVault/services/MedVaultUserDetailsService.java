@@ -56,7 +56,7 @@ public class MedVaultUserDetailsService implements UserDetailsService {
         }
 
         // Load user from database
-        User user = userRepository.findByEmail((email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.error("User not found with email: {}", email);
                     return new UsernameNotFoundException("User not found with email: " + email);
@@ -181,7 +181,7 @@ public class MedVaultUserDetailsService implements UserDetailsService {
 
     /**
      * Record successful login attempt.
-     * Called by AuthService after successful authentication.
+     * Called by AuthServiceImpl after successful authentication.
      *
      * @param email     the user's email
      * @param ipAddress the IP address of the login attempt
@@ -202,7 +202,7 @@ public class MedVaultUserDetailsService implements UserDetailsService {
 
     /**
      * Record failed login attempt.
-     * Called by AuthService after authentication failure.
+     * Called by AuthServiceImpl after authentication failure.
      *
      * @param email     the user's email
      * @param ipAddress the IP address of the login attempt
@@ -255,7 +255,7 @@ public class MedVaultUserDetailsService implements UserDetailsService {
      */
     @Transactional(readOnly = true)
     public boolean userExists(String email) {
-        return userRepository.existsByEmail((email));
+        return userRepository.existsByEmail(email);
     }
 
     // Custom exceptions for better error handling

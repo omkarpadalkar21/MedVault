@@ -3,6 +3,8 @@ package com.HackPro.MedVault.config;
 import com.HackPro.MedVault.domain.entities.UserManagement.Doctor;
 import com.HackPro.MedVault.domain.entities.UserManagement.VerificationStatus;
 import com.HackPro.MedVault.repositories.DoctorRepository;
+import com.HackPro.MedVault.security.EmergencyAccessToken;
+import com.HackPro.MedVault.services.AadhaarVerificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -30,7 +32,7 @@ public class EmergencyAccessAuthenticationProvider implements AuthenticationProv
         String otp = token.getOtp();
 
         // Verify doctor exists and is verified
-        Doctor doctor = doctorRepository.findByLicenseNumber((licenseNumber)
+        Doctor doctor = doctorRepository.findByLicenseNumber(licenseNumber)
                 .orElseThrow(() -> new BadCredentialsException("Invalid license number"));
 
         if (doctor.getVerificationStatus() != VerificationStatus.VERIFIED) {
@@ -51,10 +53,6 @@ public class EmergencyAccessAuthenticationProvider implements AuthenticationProv
         return new EmergencyAccessToken(doctor, authorities);
     }
 
-    @Override
-    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        return null;
-    }
 
     @Override
     public boolean supports(Class<?> authentication) {

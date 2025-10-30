@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class AuthService {
+public class AuthServiceImpl {
 
     private final AuthenticationManager authenticationManager;
     private final MedVaultUserDetailsService userDetailsService;
