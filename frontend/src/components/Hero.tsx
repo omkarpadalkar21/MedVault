@@ -25,16 +25,21 @@ const Hero = () => {
                   <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Button size="lg" variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm"
+                onClick={() => document.getElementById('for-providers')?.scrollIntoView({ behavior: 'smooth' })}
+              >
                 Learn How It Works
               </Button>
             </div>
             <div className="flex items-center gap-3 pt-6">
-              <Badge variant="secondary" className="gap-2 bg-white/10 text-white border border-white/20">
+              <Badge variant="secondary" className="gap-2 bg-white/10 text-white border border-white/20 px-3 py-1.5">
                 <Shield className="w-4 h-4 text-destructive" />
                 HIPAA Compliant
               </Badge>
-              <Badge variant="secondary" className="gap-2 bg-white/10 text-white border border-white/20">
+              <Badge variant="secondary" className="gap-2 bg-white/10 text-white border border-white/20 px-3 py-1.5">
                 <Users className="w-4 h-4 text-destructive" />
                 100,000+ Patients
               </Badge>

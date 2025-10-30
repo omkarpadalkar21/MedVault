@@ -29,7 +29,7 @@ const features = [
 
 const ForProviders = () => {
   return (
-    <section className="py-20 bg-background">
+    <section id="for-providers" className="py-20 bg-background">
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">

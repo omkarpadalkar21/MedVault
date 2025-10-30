@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 import ManageAccess from "./ManageAccess";
 import Documents from "./Documents";
 import Imaging from "./Imaging";
@@ -242,14 +243,14 @@ export default function PatientDashboard() {
 
         {/* Logo */}
         <div className="p-6">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             {!isSidebarCollapsed && (
               <Shield className="w-8 h-8 text-red-500"  />
             )}
             <div className="text-xl font-semibold">
               {isSidebarCollapsed ? "M+" : "MedVault"}
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Patient Info */}
@@ -354,9 +355,11 @@ export default function PatientDashboard() {
             <button className="p-2 hover:bg-muted rounded-lg">
               <Settings className="w-5 h-5" />
             </button>
-            <button className="p-2 hover:bg-muted rounded-lg">
-              <LogOut className="w-5 h-5" />
-            </button>
+            <Link to="/">
+              <button className="p-2 hover:bg-muted rounded-lg">
+                <LogOut className="w-5 h-5" />
+              </button>
+            </Link>
           </div>
         </header>
 
