@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Form,
   FormControl,
@@ -48,8 +49,13 @@ const step1Schema = z
     path: ["confirmPassword"],
   });
 
-// Step 2: Patient details schema
+// Step 2: Role selection schema
 const step2Schema = z.object({
+  role: z.enum(["PATIENT", "HEALTHCARE_PROVIDER"]),
+});
+
+// Step 3: Patient details schema
+const step3PatientSchema = z.object({
   firstName: z.string().min(1, "First name required"),
   lastName: z.string().min(1, "Last name required"),
   phoneNumber: z.string().min(10, "Valid phone number required"),
@@ -81,12 +87,33 @@ const step2Schema = z.object({
   }),
 });
 
+// Step 3: Healthcare Provider details schema (temporary)
+const step3ProviderSchema = z.object({
+  firstName: z.string().min(1, "First name required"),
+  lastName: z.string().min(1, "Last name required"),
+  phoneNumber: z.string().min(10, "Valid phone number required"),
+  specialization: z.string().min(1, "Specialization required"),
+  licenseNumber: z.string().min(1, "License number required"),
+  hospitalAffiliation: z.string().optional(),
+  yearsOfExperience: z.string().min(1, "Years of experience required"),
+  address: z.string().min(1, "Address required"),
+  termsAccepted: z.boolean().refine((val) => val === true, {
+    message: "You must accept the terms",
+  }),
+  privacyPolicyAccepted: z.boolean().refine((val) => val === true, {
+    message: "You must accept the privacy policy",
+  }),
+});
+
 type Step1Values = z.infer<typeof step1Schema>;
 type Step2Values = z.infer<typeof step2Schema>;
+type Step3PatientValues = z.infer<typeof step3PatientSchema>;
+type Step3ProviderValues = z.infer<typeof step3ProviderSchema>;
 
 export default function Signup() {
   const [step, setStep] = useState(1);
   const [step1Data, setStep1Data] = useState<Step1Values | null>(null);
+  const [step2Data, setStep2Data] = useState<Step2Values | null>(null);
 
   const step1Form = useForm<Step1Values>({
     resolver: zodResolver(step1Schema),
@@ -99,6 +126,13 @@ export default function Signup() {
 
   const step2Form = useForm<Step2Values>({
     resolver: zodResolver(step2Schema),
+    defaultValues: {
+      role: "PATIENT",
+    },
+  });
+
+  const step3PatientForm = useForm<Step3PatientValues>({
+    resolver: zodResolver(step3PatientSchema),
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -117,6 +151,22 @@ export default function Signup() {
     },
   });
 
+  const step3ProviderForm = useForm<Step3ProviderValues>({
+    resolver: zodResolver(step3ProviderSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      phoneNumber: "",
+      specialization: "",
+      licenseNumber: "",
+      hospitalAffiliation: "",
+      yearsOfExperience: "",
+      address: "",
+      termsAccepted: false,
+      privacyPolicyAccepted: false,
+    },
+  });
+
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -125,8 +175,13 @@ export default function Signup() {
     setStep(2);
   }
 
-  async function onStep2Submit(values: Step2Values) {
-    if (!step1Data) return;
+  function onStep2Submit(values: Step2Values) {
+    setStep2Data(values);
+    setStep(3);
+  }
+
+  async function onStep3PatientSubmit(values: Step3PatientValues) {
+    if (!step1Data || !step2Data) return;
 
     try {
       const response = await axios.post(
@@ -136,7 +191,41 @@ export default function Signup() {
           email: step1Data.email,
           password: step1Data.password,
           confirmPassword: step1Data.confirmPassword,
-          // Step 2 data
+          // Step 3 data
+          ...values,
+        }
+      );
+
+      toast({
+        title: "Account created",
+        description: response.data.message || "Welcome to MedVault!",
+      });
+
+      navigate("/login");
+    } catch (error: any) {
+      toast({
+        title: "Registration failed",
+        description:
+          error.response?.data?.message || "Something went wrong",
+        variant: "destructive",
+      });
+    }
+  }
+
+  async function onStep3ProviderSubmit(values: Step3ProviderValues) {
+    if (!step1Data || !step2Data) return;
+
+    try {
+      // Temporary: Using patient endpoint for healthcare providers
+      // TODO: Update this when healthcare provider endpoint is ready
+      const response = await axios.post(
+        `${API_BASE_URL}/api/v1/auth/register/healthcare-provider`,
+        {
+          // Step 1 data
+          email: step1Data.email,
+          password: step1Data.password,
+          confirmPassword: step1Data.confirmPassword,
+          // Step 3 data
           ...values,
         }
       );
@@ -162,9 +251,13 @@ export default function Signup() {
       <Card className="w-full max-w-2xl shadow-md">
         <CardHeader>
           <CardTitle className="text-2xl">
-            {step === 1 ? "Create your account" : "Complete your profile"}
+            {step === 1
+              ? "Create your account"
+              : step === 2
+              ? "Select your role"
+              : "Complete your profile"}
           </CardTitle>
-          <p className="text-sm text-muted-foreground">Step {step} of 2</p>
+          <p className="text-sm text-muted-foreground">Step {step} of 3</p>
         </CardHeader>
         <CardContent>
           {step === 1 ? (
@@ -235,20 +328,94 @@ export default function Signup() {
                 </Button>
               </form>
             </Form>
-          ) : (
+          ) : step === 2 ? (
             <Form {...step2Form}>
               <form
                 onSubmit={step2Form.handleSubmit(onStep2Submit)}
+                className="space-y-6"
+              >
+                <FormField
+                  control={step2Form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem className="space-y-4">
+                      <FormLabel className="text-base">
+                        I am registering as a:
+                      </FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="space-y-3"
+                        >
+                          <label
+                            className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
+                              field.value === "PATIENT"
+                                ? "border-primary bg-primary/5"
+                                : "border-input hover:border-primary/50"
+                            }`}
+                          >
+                            <RadioGroupItem value="PATIENT" />
+                            <div>
+                              <p className="font-medium">Patient</p>
+                              <p className="text-sm text-muted-foreground">
+                                I want to manage my health records and connect
+                                with healthcare providers
+                              </p>
+                            </div>
+                          </label>
+                          <label
+                            className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
+                              field.value === "HEALTHCARE_PROVIDER"
+                                ? "border-primary bg-primary/5"
+                                : "border-input hover:border-primary/50"
+                            }`}
+                          >
+                            <RadioGroupItem value="HEALTHCARE_PROVIDER" />
+                            <div>
+                              <p className="font-medium">Healthcare Provider</p>
+                              <p className="text-sm text-muted-foreground">
+                                I am a medical professional providing healthcare
+                                services
+                              </p>
+                            </div>
+                          </label>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep(1)}
+                    className="w-full"
+                  >
+                    Back
+                  </Button>
+                  <Button type="submit" className="w-full">
+                    Next
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          ) : step2Data?.role === "PATIENT" ? (
+            <Form {...step3PatientForm}>
+              <form
+                onSubmit={step3PatientForm.handleSubmit(onStep3PatientSubmit)}
                 className="space-y-4"
               >
                 {/* Personal Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
-                    control={step2Form.control}
+                    control={step3PatientForm.control}
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First Name</FormLabel>
+                        <FormLabel>First Name <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
                           <Input placeholder="Jane" {...field} />
                         </FormControl>
@@ -258,11 +425,11 @@ export default function Signup() {
                   />
 
                   <FormField
-                    control={step2Form.control}
+                    control={step3PatientForm.control}
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last Name</FormLabel>
+                        <FormLabel>Last Name <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
                           <Input placeholder="Doe" {...field} />
                         </FormControl>
@@ -274,11 +441,11 @@ export default function Signup() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
-                    control={step2Form.control}
+                    control={step3PatientForm.control}
                     name="phoneNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel>Phone Number <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
                           <Input
                             type="tel"
@@ -292,11 +459,11 @@ export default function Signup() {
                   />
 
                   <FormField
-                    control={step2Form.control}
+                    control={step3PatientForm.control}
                     name="dateOfBirth"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Date of Birth</FormLabel>
+                        <FormLabel>Date of Birth <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />
                         </FormControl>
@@ -308,11 +475,11 @@ export default function Signup() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
-                    control={step2Form.control}
+                    control={step3PatientForm.control}
                     name="gender"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Gender</FormLabel>
+                        <FormLabel>Gender <span className="text-destructive">*</span></FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
@@ -334,11 +501,11 @@ export default function Signup() {
                   />
 
                   <FormField
-                    control={step2Form.control}
+                    control={step3PatientForm.control}
                     name="bloodGroup"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Blood Group</FormLabel>
+                        <FormLabel>Blood Group <span className="text-destructive">*</span></FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
@@ -367,11 +534,11 @@ export default function Signup() {
 
                 {/* Identity Verification */}
                 <FormField
-                  control={step2Form.control}
+                  control={step3PatientForm.control}
                   name="aadhaarNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Aadhaar Number</FormLabel>
+                      <FormLabel>Aadhaar Number <span className="text-destructive">*</span></FormLabel>
                       <FormControl>
                         <Input
                           type="text"
@@ -387,7 +554,7 @@ export default function Signup() {
 
                 {/* Medical Information */}
                 <FormField
-                  control={step2Form.control}
+                  control={step3PatientForm.control}
                   name="allergies"
                   render={({ field }) => (
                     <FormItem>
@@ -404,7 +571,7 @@ export default function Signup() {
                 />
 
                 <FormField
-                  control={step2Form.control}
+                  control={step3PatientForm.control}
                   name="chronicConditions"
                   render={({ field }) => (
                     <FormItem>
@@ -422,11 +589,11 @@ export default function Signup() {
 
                 {/* Contact Information */}
                 <FormField
-                  control={step2Form.control}
+                  control={step3PatientForm.control}
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address</FormLabel>
+                      <FormLabel>Address <span className="text-destructive">*</span></FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="123 Main Street, City, State, PIN"
@@ -440,11 +607,11 @@ export default function Signup() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
-                    control={step2Form.control}
+                    control={step3PatientForm.control}
                     name="emergencyContactName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Emergency Contact Name</FormLabel>
+                        <FormLabel>Emergency Contact Name <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
                           <Input placeholder="John Doe" {...field} />
                         </FormControl>
@@ -454,11 +621,11 @@ export default function Signup() {
                   />
 
                   <FormField
-                    control={step2Form.control}
+                    control={step3PatientForm.control}
                     name="emergencyContactPhone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Emergency Contact Phone</FormLabel>
+                        <FormLabel>Emergency Contact Phone <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
                           <Input
                             type="tel"
@@ -474,7 +641,7 @@ export default function Signup() {
 
                 {/* Terms and Conditions */}
                 <FormField
-                  control={step2Form.control}
+                  control={step3PatientForm.control}
                   name="termsAccepted"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0">
@@ -498,7 +665,7 @@ export default function Signup() {
                 />
 
                 <FormField
-                  control={step2Form.control}
+                  control={step3PatientForm.control}
                   name="privacyPolicyAccepted"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0">
@@ -525,7 +692,209 @@ export default function Signup() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setStep(1)}
+                    onClick={() => setStep(2)}
+                    className="w-full"
+                  >
+                    Back
+                  </Button>
+                  <Button type="submit" className="w-full">
+                    Create Account
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          ) : (
+            <Form {...step3ProviderForm}>
+              <form
+                onSubmit={step3ProviderForm.handleSubmit(onStep3ProviderSubmit)}
+                className="space-y-4"
+              >
+                {/* Personal Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={step3ProviderForm.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Dr. Jane" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={step3ProviderForm.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Doe" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={step3ProviderForm.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          placeholder="+919876543210"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Professional Information */}
+                <FormField
+                  control={step3ProviderForm.control}
+                  name="specialization"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Specialization</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Cardiology, Pediatrics, etc."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={step3ProviderForm.control}
+                    name="licenseNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Medical License Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="MCI-12345" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={step3ProviderForm.control}
+                    name="yearsOfExperience"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Years of Experience</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="5" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={step3ProviderForm.control}
+                  name="hospitalAffiliation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hospital/Clinic Affiliation (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="City General Hospital"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Contact Information */}
+                <FormField
+                  control={step3ProviderForm.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Clinic/Practice Address</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="123 Medical Street, City, State, PIN"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Terms and Conditions */}
+                <FormField
+                  control={step3ProviderForm.control}
+                  name="termsAccepted"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          I accept the{" "}
+                          <a href="/terms" className="text-primary underline">
+                            Terms of Service
+                          </a>
+                        </FormLabel>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={step3ProviderForm.control}
+                  name="privacyPolicyAccepted"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          I accept the{" "}
+                          <a href="/privacy" className="text-primary underline">
+                            Privacy Policy
+                          </a>
+                        </FormLabel>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep(2)}
                     className="w-full"
                   >
                     Back
