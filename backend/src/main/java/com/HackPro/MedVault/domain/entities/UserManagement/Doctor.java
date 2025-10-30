@@ -3,6 +3,7 @@ package com.HackPro.MedVault.domain.entities.UserManagement;
 import com.HackPro.MedVault.domain.entities.AccessControl.AccessRequest;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.Date;
 import java.util.List;
@@ -11,7 +12,7 @@ import java.util.List;
 @Table(name = "doctors")
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @Setter
 @Getter
 @PrimaryKeyJoinColumn(name = "user_id")

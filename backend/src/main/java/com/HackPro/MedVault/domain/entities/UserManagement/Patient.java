@@ -4,6 +4,7 @@ import com.HackPro.MedVault.domain.entities.MedicalRecords.EmergencyProfile;
 import com.HackPro.MedVault.domain.entities.MedicalRecords.MedicalRecord;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.Date;
 import java.util.List;
@@ -15,7 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 @Setter
 @Getter
-@Builder
+@SuperBuilder
 public class Patient extends User {
     @Column(unique = true, nullable = false)
     private String aadhaarNumber; // Encrypted
