@@ -6,6 +6,7 @@ import com.HackPro.MedVault.domain.dtos.PatientRegistrationDto;
 import com.HackPro.MedVault.domain.entities.MedicalRecords.EmergencyProfile;
 import com.HackPro.MedVault.domain.entities.UserManagement.Patient;
 import com.HackPro.MedVault.domain.entities.UserManagement.UserRole;
+import com.HackPro.MedVault.exceptions.DuplicateResourceException;
 import com.HackPro.MedVault.repositories.EmergencyProfileRepository;
 import com.HackPro.MedVault.repositories.PatientRepository;
 import com.HackPro.MedVault.repositories.UserRepository;
