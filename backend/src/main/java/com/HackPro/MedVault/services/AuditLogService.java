@@ -31,4 +31,9 @@ public class AuditLogService {
         log.warn("Security Event - Type: {}, IP: {}, Details: {}", eventType, ipAddress, details);
         // TODO: Save to database and trigger alerts
     }
+
+    public void logActivity(UUID userId, String activityType, String source) {
+        log.info("Activity Log - User: {}, Activity: {}, Source: {}", userId, activityType, source);
+        // TODO: Save to database
+    }
 }

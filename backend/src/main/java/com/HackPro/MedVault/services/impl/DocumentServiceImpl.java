@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -65,13 +67,17 @@ public class DocumentServiceImpl implements DocumentService {
     private void sendToN8nAsync(Document document) {
         new Thread(() -> {
             try {
-                log.info("Sending document to n8n: {}", document.getId());
+                log.info("=== SENDING TO N8N ===");
+                log.info("Webhook URL: {}", n8nWebhookUrl);
+                log.info("Document ID: {}", document.getId());
+                log.info("File URL: {}", document.getFileUrl());
 
                 // Update status to PROCESSING
                 document.setProcessingStatus(ProcessingStatus.PROCESSING);
                 documentRepository.save(document);
+                log.info("Document status updated to PROCESSING");
 
-                // Prepare payload for n8n
+                // Prepare payload
                 var payload = new N8nWebhookPayload(
                         document.getId(),
                         document.getTitle(),
@@ -80,17 +86,40 @@ public class DocumentServiceImpl implements DocumentService {
                         document.getPatient().getId()
                 );
 
-                // Send POST request to n8n
-                restTemplate.postForObject(n8nWebhookUrl, payload, String.class);
+                log.info("Payload prepared: {}", payload);
 
-                log.info("Successfully sent document to n8n: {}", document.getId());
+                try {
+                    // Send POST request to n8n
+                    String response = restTemplate.postForObject(n8nWebhookUrl, payload, String.class);
+                    log.info("n8n Response received: {}", response);
+                    log.info("=== SUCCESSFULLY SENT TO N8N ===");
+
+                } catch (Exception restException) {
+                    log.error("=== FAILED TO SEND TO N8N - RestTemplate Error ===", restException);
+                    log.error("Exception Type: {}", restException.getClass().getName());
+                    log.error("Exception Message: {}", restException.getMessage());
+                    log.error("Exception Cause: {}", restException.getCause());
+
+                    // Print stack trace for debugging
+                    StringWriter sw = new StringWriter();
+                    restException.printStackTrace(new PrintWriter(sw));
+                    log.error("Stack Trace: {}", sw.toString());
+
+                    document.setProcessingStatus(ProcessingStatus.FAILED);
+                    documentRepository.save(document);
+                }
+
             } catch (Exception e) {
-                log.error("Failed to send document to n8n: {}", document.getId(), e);
+                log.error("=== FAILED TO SEND TO N8N - General Error ===", e);
+                log.error("Exception Type: {}", e.getClass().getName());
+                log.error("Exception Message: {}", e.getMessage());
+
                 document.setProcessingStatus(ProcessingStatus.FAILED);
                 documentRepository.save(document);
             }
         }).start();
     }
+
 
     @Override
     @Transactional

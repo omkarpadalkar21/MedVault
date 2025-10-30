@@ -55,8 +55,13 @@ public class MedVaultSecurityConfig {
                 // Healthcare-specific authorization rules
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
-                        .requestMatchers("/api/v1/auth/register/**", "/api/v1/auth/login",
-                                "/api/v1/auth/forgot-password", "/fhir/metadata").permitAll()
+                        .requestMatchers(
+                                "/api/v1/auth/register/**",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/forgot-password",
+                                "/api/v1/auth/reset-password",
+                                "/api/v1/auth/refresh-token"
+                        ).permitAll()
 
                         // Patient-only endpoints
                         .requestMatchers("/api/v1/patients/**")
