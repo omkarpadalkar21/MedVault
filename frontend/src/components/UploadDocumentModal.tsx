@@ -13,12 +13,11 @@ import { Label } from "./ui/label";
 import { useToast } from "./ui/use-toast";
 import { Upload, FileText, X, Loader2 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
+import apiClient from "../services/api";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "";
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 interface UploadDocumentModalProps {
   open: boolean;
@@ -27,10 +26,14 @@ interface UploadDocumentModalProps {
 }
 
 interface ProcessedDocument {
-  summary: string;
-  anomalies: string[];
+  id: string;
+  title: string;
+  fileUrl: string;
   category: string;
   documentType: string;
+  summary: string;
+  anomalies: string[];
+  processingStatus: string;
 }
 
 export default function UploadDocumentModal({
@@ -41,13 +44,12 @@ export default function UploadDocumentModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [documentTitle, setDocumentTitle] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [processing, setProcessing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "File too large",
@@ -57,7 +59,6 @@ export default function UploadDocumentModal({
         return;
       }
 
-      // Validate file type
       const allowedTypes = [
         "application/pdf",
         "image/jpeg",
@@ -74,7 +75,6 @@ export default function UploadDocumentModal({
       }
 
       setSelectedFile(file);
-      // Auto-fill title from filename if empty
       if (!documentTitle) {
         setDocumentTitle(file.name.replace(/\.[^/.]+$/, ""));
       }
@@ -98,7 +98,12 @@ export default function UploadDocumentModal({
     setUploading(true);
 
     try {
-      // Step 1: Upload file to Supabase Storage
+      if (!supabase) {
+        throw new Error("Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file");
+      }
+
+      // Step 1: Upload to Supabase Storage
+      setUploadProgress("Uploading file to storage...");
       const userId = localStorage.getItem("userId") || "anonymous";
       const timestamp = Date.now();
       const fileExt = selectedFile.name.split(".").pop();
@@ -116,76 +121,51 @@ export default function UploadDocumentModal({
 
       if (uploadError) throw uploadError;
 
-      toast({
-        title: "File uploaded",
-        description: "Processing document with AI...",
-      });
-
-      setProcessing(true);
-
       // Step 2: Get public URL
       const { data: urlData } = supabase.storage
         .from("medical-documents")
         .getPublicUrl(fileName);
 
-      // Step 3: Send to n8n for processing
-      const response = await fetch(N8N_WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          documentTitle,
+      // Step 3: Send to Spring Boot API
+      setUploadProgress("Processing document with AI...");
+      const response = await apiClient.post<ProcessedDocument>(
+        "/api/v1/documents/upload",
+        {
+          title: documentTitle,
           fileUrl: urlData.publicUrl,
           fileName: fileName,
-          userId: userId,
-          uploadTimestamp: new Date().toISOString(),
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to process document");
-
-      const processedData: ProcessedDocument = await response.json();
-
-      // Step 4: Save to database with processed data
-      // TODO: Replace with your actual API endpoint
-      // await axios.post('API_BASE_URL/api/v1/documents', {
-      //   title: documentTitle,
-      //   fileUrl: urlData.publicUrl,
-      //   fileName: fileName,
-      //   category: processedData.category,
-      //   documentType: processedData.documentType,
-      //   summary: processedData.summary,
-      //   anomalies: processedData.anomalies,
-      //   userId: userId,
-      // });
+        }
+      );
 
       toast({
-        title: "Success!",
-        description: `Document processed successfully. Category: ${processedData.category}, Type: ${processedData.documentType}`,
+        title: "Upload successful!",
+        description:
+          "Your document is being processed. You'll see it in your documents list shortly.",
       });
 
       // Reset form
       setSelectedFile(null);
       setDocumentTitle("");
+      setUploadProgress("");
       onOpenChange(false);
 
-      // Callback to refresh documents list
+      // Refresh documents list
       onDocumentAdded?.();
     } catch (error: any) {
       console.error("Upload error:", error);
       toast({
         title: "Upload failed",
-        description: error.message || "Failed to upload and process document",
+        description:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to upload document",
         variant: "destructive",
       });
     } finally {
       setUploading(false);
-      setProcessing(false);
+      setUploadProgress("");
     }
   };
-
-  const isProcessing = uploading || processing;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -211,7 +191,7 @@ export default function UploadDocumentModal({
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={handleFileChange}
                   className="hidden"
-                  disabled={isProcessing}
+                  disabled={uploading}
                 />
                 <Label
                   htmlFor="file"
@@ -244,7 +224,7 @@ export default function UploadDocumentModal({
                   size="sm"
                   onClick={handleRemoveFile}
                   className="flex-shrink-0"
-                  disabled={isProcessing}
+                  disabled={uploading}
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -260,21 +240,14 @@ export default function UploadDocumentModal({
               placeholder="e.g., Blood Test Results - Oct 2025"
               value={documentTitle}
               onChange={(e) => setDocumentTitle(e.target.value)}
-              disabled={isProcessing}
+              disabled={uploading}
             />
           </div>
 
-          {processing && (
+          {uploading && uploadProgress && (
             <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-blue-900">
-                  AI is analyzing your document...
-                </p>
-                <p className="text-xs text-blue-700">
-                  Extracting information, detecting anomalies, and categorizing
-                </p>
-              </div>
+              <p className="text-sm text-blue-900">{uploadProgress}</p>
             </div>
           )}
         </div>
@@ -283,19 +256,19 @@ export default function UploadDocumentModal({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isProcessing}
+            disabled={uploading}
           >
             Cancel
           </Button>
           <Button
             onClick={handleUpload}
-            disabled={isProcessing}
+            disabled={uploading}
             className="bg-[#00BFA5] hover:bg-[#00A892]"
           >
-            {isProcessing ? (
+            {uploading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {uploading ? "Uploading..." : "Processing..."}
+                Uploading...
               </>
             ) : (
               "Upload & Process"
