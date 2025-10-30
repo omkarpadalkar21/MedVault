@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Calendar, MessageSquare, Settings, ChevronDown, FileText, Activity, ChevronRight, ChevronLeft } from "lucide-react";
+import { Search, Calendar, MessageSquare, Settings, ChevronDown, FileText, Activity, ChevronRight, ChevronLeft, Shield } from "lucide-react";
 
 interface Patient {
   id: string;
@@ -92,11 +92,19 @@ export default function DoctorDashboard() {
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
-      <aside className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-[#2C5F6F] text-white p-6 flex flex-col transition-all duration-300 relative`}>
+      <aside
+        className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} text-white p-6 flex flex-col transition-all duration-300 relative`}
+        style={{
+          background: "linear-gradient(180deg, hsl(211 66% 40%) 0%, hsl(186 78% 48%) 100%)"
+        }}
+      >
         {/* Collapse Toggle Button */}
         <button
           onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          className="absolute -right-3 top-8 w-6 h-6 bg-[#2C5F6F] rounded-full flex items-center justify-center hover:bg-[#1E4A5A] transition-colors border-2 border-background z-10"
+          className="absolute -right-3 top-8 w-6 h-6 rounded-full flex items-center justify-center hover:opacity-90 transition-opacity border-2 border-background z-10"
+          style={{
+            background: "linear-gradient(180deg, hsl(211 66% 40%) 0%, hsl(186 78% 48%) 100%)"
+          }}
         >
           {isSidebarCollapsed ? (
             <ChevronRight className="w-4 h-4" />
@@ -106,8 +114,12 @@ export default function DoctorDashboard() {
         </button>
 
         <div className={`flex items-center gap-2 mb-8 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-          <div className={`text-xl font-semibold ${isSidebarCollapsed ? 'hidden' : ''}`}>MedVault+</div>
-          {isSidebarCollapsed && <div className="text-xl font-semibold">M+</div>}
+          {!isSidebarCollapsed && (
+            <Shield className="w-8 h-8 text-red-500" />
+          )}
+          <div className={`text-xl font-semibold ${isSidebarCollapsed ? '' : ''}`}>
+            {isSidebarCollapsed ? "M+" : "MedVault"}
+          </div>
         </div>
 
         {/* Doctor Profile */}
@@ -126,21 +138,9 @@ export default function DoctorDashboard() {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-2">
-          <button className={`w-full text-left px-4 py-3 rounded-lg bg-[#1E4A5A] hover:bg-[#1A3F4D] transition-colors flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+          <button className={`w-full text-left px-4 py-3 rounded-lg bg-white/20 hover:bg-white/30 transition-colors flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
             <Calendar className="w-5 h-5 flex-shrink-0" />
             {!isSidebarCollapsed && <span>Dashboard / Patient Lookup</span>}
-          </button>
-          <button className={`w-full text-left px-4 py-3 rounded-lg hover:bg-[#1E4A5A] transition-colors flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-            <Calendar className="w-5 h-5 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>My Schedule</span>}
-          </button>
-          <button className={`w-full text-left px-4 py-3 rounded-lg hover:bg-[#1E4A5A] transition-colors flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-            <MessageSquare className="w-5 h-5 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>Messages</span>}
-          </button>
-          <button className={`w-full text-left px-4 py-3 rounded-lg hover:bg-[#1E4A5A] transition-colors flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-            <Settings className="w-5 h-5 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>Settings</span>}
           </button>
         </nav>
       </aside>
@@ -161,9 +161,8 @@ export default function DoctorDashboard() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Patient Lookup and Recent Patients */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="max-w-[40%]">
+          <div className="space-y-6">
             {/* Patient Lookup */}
             <Card>
               <CardHeader>
@@ -219,96 +218,6 @@ export default function DoctorDashboard() {
                       )}
                     </div>
                     <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column - Schedule and Notifications */}
-          <div className="space-y-6">
-            {/* Today's Schedule */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Today's Schedule</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {todaysSchedule.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-4 rounded-lg bg-[#E0F2F1] border border-[#00BFA5]/20"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#00BFA5]/20 flex items-center justify-center flex-shrink-0">
-                        {item.icon === "neurology" ? (
-                          <Activity className="w-5 h-5 text-[#00BFA5]" />
-                        ) : (
-                          <Activity className="w-5 h-5 text-[#00BFA5]" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-1">
-                          <h4 className="font-semibold">{item.title}</h4>
-                          <span className="text-sm text-muted-foreground">{item.time}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Avatar className="w-4 h-4">
-                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                              P
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-muted-foreground">{item.doctor}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Notifications */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Notifications</CardTitle>
-                <p className="text-sm text-muted-foreground">Secledulss</p>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className="p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-[#E0F2F1] flex items-center justify-center flex-shrink-0">
-                        {notification.type === "document" ? (
-                          <FileText className="w-5 h-5 text-[#00BFA5]" />
-                        ) : (
-                          <Activity className="w-5 h-5 text-[#00BFA5]" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-1">
-                          <h4 className="font-semibold">{notification.title}</h4>
-                          <span className="text-sm text-muted-foreground">{notification.time}</span>
-                        </div>
-                        {notification.description && (
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {notification.description}
-                          </p>
-                        )}
-                        {notification.assignedTo && (
-                          <div className="flex items-center gap-1 text-sm">
-                            <Avatar className="w-4 h-4">
-                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                {notification.assignedTo[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-muted-foreground">{notification.assignedTo}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
                   </div>
                 ))}
               </CardContent>
