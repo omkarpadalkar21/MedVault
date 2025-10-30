@@ -233,7 +233,7 @@ export default function ManageAccess() {
               </Button>
               <Button className="flex-1 bg-[#00BFA5] hover:bg-[#00A892]">
                 <QrCode className="w-4 h-4 mr-2" />
-                Generate QR Card
+                Set as Emergency Data
               </Button>
             </div>
           </CardContent>

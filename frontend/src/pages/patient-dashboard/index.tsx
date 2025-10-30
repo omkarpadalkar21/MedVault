@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import ManageAccess from "./ManageAccess";
+import Documents from "./Documents";
+import Imaging from "./Imaging";
+import Communication from "./Communication";
 import {
   Search,
   Bell,
@@ -61,6 +64,9 @@ export default function PatientDashboard() {
   const [activeDocCategory, setActiveDocCategory] = useState("All Documents");
   const [activeSystem, setActiveSystem] = useState<string>("Circulatory");
   const [activeView, setActiveView] = useState<string>("overview");
+  const [unreadMessages, setUnreadMessages] = useState(3);
+  const [totalDocuments, setTotalDocuments] = useState(24);
+  const [totalImages, setTotalImages] = useState(12);
   const [diagnosisItems, setDiagnosisItems] = useState<DiagnosisItem[]>([
     {
       id: "1",
@@ -260,6 +266,20 @@ export default function PatientDashboard() {
                 <p className="text-xs text-gray-400">Patient ID: 14838</p>
               </div>
             </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-300">Age:</span>
+                <span className="font-medium">42 years</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-300">Blood Group:</span>
+                <span className="font-medium">O+</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-300">Gender:</span>
+                <span className="font-medium">Male</span>
+              </div>
+            </div>
           </div>
         )}
 
@@ -275,50 +295,37 @@ export default function PatientDashboard() {
             {!isSidebarCollapsed && <span>Overview</span>}
           </button>
           <button
-            onClick={() => setActiveView("manage-access")}
+            onClick={() => setActiveView("set-emergency-data")}
             className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
-              activeView === "manage-access" ? "bg-white/20 hover:bg-white/30" : "hover:bg-white/10"
+              activeView === "set-emergency-data" ? "bg-white/20 hover:bg-white/30" : "hover:bg-white/10"
             } ${isSidebarCollapsed ? "justify-center" : ""}`}
           >
             <Shield className="w-5 h-5 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>Manage Access</span>}
+            {!isSidebarCollapsed && <span>Set Emergency Data</span>}
           </button>
           <button
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/10 transition-colors ${
-              isSidebarCollapsed ? "justify-center" : ""
-            }`}
+            onClick={() => setActiveView("documents")}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
+              activeView === "documents" ? "bg-white/20 hover:bg-white/30" : "hover:bg-white/10"
+            } ${isSidebarCollapsed ? "justify-center" : ""}`}
           >
             <FileText className="w-5 h-5 flex-shrink-0" />
             {!isSidebarCollapsed && <span>Documents</span>}
           </button>
           <button
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/10 transition-colors ${
-              isSidebarCollapsed ? "justify-center" : ""
-            }`}
-          >
-            <FlaskConical className="w-5 h-5 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>Labs</span>}
-          </button>
-          <button
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/10 transition-colors ${
-              isSidebarCollapsed ? "justify-center" : ""
-            }`}
+            onClick={() => setActiveView("imaging")}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
+              activeView === "imaging" ? "bg-white/20 hover:bg-white/30" : "hover:bg-white/10"
+            } ${isSidebarCollapsed ? "justify-center" : ""}`}
           >
             <ImageIcon className="w-5 h-5 flex-shrink-0" />
             {!isSidebarCollapsed && <span>Imaging</span>}
           </button>
           <button
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/10 transition-colors ${
-              isSidebarCollapsed ? "justify-center" : ""
-            }`}
-          >
-            <Activity className="w-5 h-5 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>Vital Signs</span>}
-          </button>
-          <button
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/10 transition-colors ${
-              isSidebarCollapsed ? "justify-center" : ""
-            }`}
+            onClick={() => setActiveView("communication")}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
+              activeView === "communication" ? "bg-white/20 hover:bg-white/30" : "hover:bg-white/10"
+            } ${isSidebarCollapsed ? "justify-center" : ""}`}
           >
             <MessageSquare className="w-5 h-5 flex-shrink-0" />
             {!isSidebarCollapsed && <span>Communication</span>}
@@ -355,8 +362,14 @@ export default function PatientDashboard() {
 
         {/* Content Grid */}
         <div className="flex-1 overflow-auto">
-          {activeView === "manage-access" ? (
+          {activeView === "set-emergency-data" ? (
             <ManageAccess />
+          ) : activeView === "documents" ? (
+            <Documents />
+          ) : activeView === "imaging" ? (
+            <Imaging />
+          ) : activeView === "communication" ? (
+            <Communication />
           ) : (
             <div className="p-8">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
