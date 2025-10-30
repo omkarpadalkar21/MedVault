@@ -6,3 +6,5 @@
 
 # Backend specific
 /backend/.idea/
+/frontend/.env
+/frontend/pnpm-lock.yaml
