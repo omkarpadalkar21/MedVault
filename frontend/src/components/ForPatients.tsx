@@ -71,9 +71,6 @@ const ForPatients = () => {
                 </Card>
               ))}
             </div>
-            <Button size="lg" className="mt-6">
-              Sign Up as Patient →
-            </Button>
           </div>
         </div>
       </div>

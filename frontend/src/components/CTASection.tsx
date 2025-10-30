@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const CTASection = () => {
   return (
@@ -12,14 +13,13 @@ const CTASection = () => {
           <p className="text-xl md:text-xl text-primary-light/90">
             Join thousands of patients and healthcare providers who trust MedVault for secure, interoperable health data management.
           </p>
-          <div className="flex flex-wrap gap-4 justify-center pt-4">
-            <Button size="lg" variant="destructive" className="group">
-              Get Started Free
-              <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
-            <Button size="lg" variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm">
-              Schedule a Demo
-            </Button>
+          <div className="flex justify-center pt-4">
+            <Link to="/signup">
+              <Button size="lg" variant="destructive" className="group">
+                Get Started Free
+                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
