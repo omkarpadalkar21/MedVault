@@ -1,5 +1,7 @@
 package com.HackPro.MedVault.security;
 
+import com.HackPro.MedVault.services.AuditLogService;
+import com.HackPro.MedVault.services.MFAService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

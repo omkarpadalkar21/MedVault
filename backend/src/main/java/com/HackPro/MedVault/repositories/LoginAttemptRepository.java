@@ -30,4 +30,4 @@ public interface LoginAttemptRepository extends JpaRepository<LoginAttempt, UUID
      */
     java.util.List<LoginAttempt> findByEmailOrderByAttemptedAtDesc(String email);
 }
-}
+

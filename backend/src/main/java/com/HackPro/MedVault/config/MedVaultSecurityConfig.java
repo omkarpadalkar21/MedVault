@@ -1,6 +1,6 @@
 package com.HackPro.MedVault.config;
 
-import com.HackPro.MedVault.security.JwtAuthFilter;
+import com.HackPro.MedVault.security.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
