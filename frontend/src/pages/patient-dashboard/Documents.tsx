@@ -1,15 +1,17 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Plus } from 'lucide-react';
+import UploadDocumentModal from '../../components/UploadDocumentModal';
 import { Badge } from "@/components/ui/badge";
-import { Search, Eye, Download, FileText, Activity, FlaskConical, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Activity, Calendar, Download, Eye, FileText, FlaskConical, Search } from "lucide-react";
 import { useState } from "react";
 
 export default function Documents() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const documents = [
     {
       id: "1",
@@ -112,11 +114,20 @@ export default function Documents() {
 
   return (
     <div className="p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Medical Documents</h1>
-        <p className="text-muted-foreground">
-          View and manage all your medical records and documents
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Medical Documents</h1>
+          <p className="text-muted-foreground">
+            View and manage all your medical records and documents
+          </p>
+        </div>
+        <Button
+          onClick={() => setUploadModalOpen(true)}
+          className="bg-[#00BFA5] hover:bg-[#00A892]"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Upload Document
+        </Button>
       </div>
 
       {/* Search and Filter */}
@@ -225,6 +236,8 @@ export default function Documents() {
           </CardContent>
         </Card>
       )}
+
+      <UploadDocumentModal open={uploadModalOpen} onOpenChange={setUploadModalOpen} />
     </div>
   );
 }
