@@ -7,6 +7,7 @@ import com.HackPro.MedVault.domain.entities.MedicalRecords.EmergencyProfile;
 import com.HackPro.MedVault.domain.entities.UserManagement.Patient;
 import com.HackPro.MedVault.domain.entities.UserManagement.UserRole;
 import com.HackPro.MedVault.exceptions.DuplicateResourceException;
+import com.HackPro.MedVault.exceptions.WeakPasswordException;
 import com.HackPro.MedVault.repositories.EmergencyProfileRepository;
 import com.HackPro.MedVault.repositories.PatientRepository;
 import com.HackPro.MedVault.repositories.UserRepository;
@@ -21,7 +22,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +43,7 @@ public class AuthServiceImpl {
     private final EncryptionService encryptionService;
     private final AuditLogService auditLogService;
     private final AuthenticationManager authenticationManager;
-    private final UserDetailsService userDetailsService;
+    private final MedVaultUserDetailsService MedVaultUserDetailsService;
     private final JwtService jwtService;
 
     /**
@@ -185,7 +185,7 @@ public class AuthServiceImpl {
             );
 
             // Record successful login
-            userDetailsService.recordSuccessfulLogin(request.getEmail(), ipAddress);
+            MedVaultUserDetailsService.recordSuccessfulLogin(request.getEmail(), ipAddress);
 
             MedVaultUserDetails userDetails =
                     (MedVaultUserDetails) authentication.getPrincipal();
@@ -195,7 +195,7 @@ public class AuthServiceImpl {
 
         } catch (AuthenticationException e) {
             // Record failed login
-            userDetailsService.recordFailedLogin(
+            MedVaultUserDetailsService.recordFailedLogin(
                     request.getEmail(),
                     ipAddress,
                     e.getMessage()
