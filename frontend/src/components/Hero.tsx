@@ -4,6 +4,7 @@ import heroImage from "@/assets/hero-medical.jpg";
 import { Card, CardContent } from "@/components/ui/card";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 
 const Hero = () => {
   return (
@@ -18,10 +19,12 @@ const Hero = () => {
               Take control of your medical data with MedVault. Access, share, and manage your health information securely with complete privacy, interoperability, and consent-based sharing across all healthcare providers.
             </p>
             <div className="flex flex-wrap gap-4 pt-4">
-              <Button size="lg" variant="destructive" className="group">
-                Get Started Free
-                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
+              <Link to="/signup">
+                <Button size="lg" variant="destructive" className="group">
+                  Get Started Free
+                  <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
               <Button size="lg" variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm">
                 Learn How It Works
               </Button>

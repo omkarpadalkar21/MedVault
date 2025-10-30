@@ -60,9 +60,6 @@ const ForProviders = () => {
                 </Card>
               ))}
             </div>
-            <Button size="lg" variant="destructive" className="mt-6">
-              Register as Healthcare Provider →
-            </Button>
           </div>
           <div>
             <Card className="rounded-2xl shadow-elegant-lg overflow-hidden">
