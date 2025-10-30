@@ -82,7 +82,7 @@ public class AuthServiceImpl {
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList()))
                 .mfaEnabled(userDetails.isMfaEnabled())
-                .mfaVerified(userDetails.getMfaVerified())
+                .mfaVerified(userDetails.isMfaVerified())
                 .requiresMfa(userDetails.requiresMFA())
                 .verificationStatus(userDetails.getVerificationStatus())
                 .issuedAt(System.currentTimeMillis())
