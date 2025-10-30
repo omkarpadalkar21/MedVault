@@ -1,1 +1,8 @@
-/backend/.idea
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Backend specific
+/backend/.idea/
