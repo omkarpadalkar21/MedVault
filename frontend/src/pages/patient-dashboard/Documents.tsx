@@ -24,9 +24,15 @@ export default function Documents() {
   const { toast } = useToast();
 
   const fetchDocuments = async () => {
+    setLoading(true);
     try {
+      console.log('=== Fetching Documents ===');
+      console.log('Access Token:', localStorage.getItem('accessToken'));
+      console.log('User ID:', localStorage.getItem('userId'));
+      
       const response = await apiClient.get<Document[]>("/api/v1/documents");
-      // Ensure we always set an array
+      console.log('Documents fetched successfully:', response.data);
+      
       const data = response.data;
       if (Array.isArray(data)) {
         setDocuments(data);
@@ -34,8 +40,13 @@ export default function Documents() {
         console.warn("API returned non-array data:", data);
         setDocuments([]);
       }
-    } catch (error) {
-      console.error("Failed to fetch documents:", error);
+    } catch (error: any) {
+      console.error("=== Failed to fetch documents ===");
+      console.error("Error object:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      console.error("Error message:", error.message);
+      
       // Set empty array on error so component doesn't crash
       setDocuments([]);
       // Only show toast if it's available

@@ -1,18 +1,25 @@
 package com.HackPro.MedVault.services;
 
 import com.HackPro.MedVault.domain.dtos.AuthResponseDto;
+import com.HackPro.MedVault.domain.dtos.DoctorRegistrationDto;
 import com.HackPro.MedVault.domain.dtos.LoginRequestDto;
+import com.HackPro.MedVault.domain.dtos.MFAVerificationRequestDto;
 import com.HackPro.MedVault.domain.dtos.PatientRegistrationDto;
+import com.HackPro.MedVault.domain.dtos.ResetPasswordDto;
 import com.HackPro.MedVault.domain.entities.MedicalRecords.EmergencyProfile;
+import com.HackPro.MedVault.domain.entities.UserManagement.Doctor;
 import com.HackPro.MedVault.domain.entities.UserManagement.Patient;
 import com.HackPro.MedVault.domain.entities.UserManagement.UserRole;
+import com.HackPro.MedVault.domain.entities.UserManagement.VerificationStatus;
 import com.HackPro.MedVault.exceptions.DuplicateResourceException;
 import com.HackPro.MedVault.exceptions.WeakPasswordException;
+import com.HackPro.MedVault.repositories.DoctorRepository;
 import com.HackPro.MedVault.repositories.EmergencyProfileRepository;
 import com.HackPro.MedVault.repositories.PatientRepository;
 import com.HackPro.MedVault.repositories.UserRepository;
 import com.HackPro.MedVault.security.MedVaultUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +29,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +53,8 @@ public class AuthServiceImpl {
     private final AuthenticationManager authenticationManager;
     private final MedVaultUserDetailsService MedVaultUserDetailsService;
     private final JwtService jwtService;
+    private final DoctorRepository doctorRepository;
+    private final MFAService mfaService;
 
     /**
      * Register a new patient in the system
@@ -238,5 +248,147 @@ public class AuthServiceImpl {
                 .message("Login successful")
                 .build();
     }
+
+    // Add these methods to your existing AuthServiceImpl class
+
+    @Transactional
+    public AuthResponseDto registerDoctor(DoctorRegistrationDto dto) {
+        log.info("Starting doctor registration for email: {}", dto.getEmail());
+
+        // Validate password confirmation
+        if (!dto.isPasswordConfirmed()) {
+            throw new ValidationException("Password and confirm password do not match");
+        }
+
+        // Validate password strength
+        if (!passwordValidationService.isValidPassword(dto.getPassword())) {
+            throw new WeakPasswordException(
+                    "Password must be at least 12 characters with uppercase, lowercase, digit, and special character"
+            );
+        }
+
+        // Check if email already exists
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new DuplicateResourceException("Email is already registered");
+        }
+
+        // Create Doctor entity
+        Doctor doctor = new Doctor();
+        doctor.setEmail(dto.getEmail());
+        doctor.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
+        doctor.setPhoneNumber(dto.getPhoneNumber());
+        doctor.setRole(UserRole.DOCTOR);
+        doctor.setIsActive(true);
+        doctor.setMfaEnabled(false);
+
+        doctor.setFirstName(dto.getFirstName());
+        doctor.setLastName(dto.getLastName());
+        doctor.setSpecialization(dto.getSpecialization());
+        doctor.setLicenseNumber(dto.getLicenseNumber());
+        doctor.setLicenseExpiryDate(java.sql.Date.valueOf(dto.getLicenseExpiryDate()));
+        doctor.setHospitalAffiliation(dto.getHospitalAffiliation());
+        doctor.setVerificationStatus(VerificationStatus.PENDING);
+
+        Doctor savedDoctor = doctorRepository.save(doctor);
+        log.info("Doctor registered successfully with ID: {}", savedDoctor.getId());
+
+        return AuthResponseDto.builder()
+                .userId(savedDoctor.getId())
+                .email(savedDoctor.getEmail())
+                .role(savedDoctor.getRole())
+                .verificationStatus(savedDoctor.getVerificationStatus())
+                .message("Doctor registration successful. Awaiting verification.")
+                .issuedAt(System.currentTimeMillis())
+                .build();
+    }
+
+    public void logout(UserDetails userDetails, HttpServletRequest request,
+                       HttpServletResponse response) {
+        if (userDetails != null) {
+            log.info("User logged out: {}", userDetails.getUsername());
+            auditLogService.logAuthenticationEvent(
+                    ((MedVaultUserDetails) userDetails).getUserId(),
+                    "LOGOUT",
+                    request.getRemoteAddr()
+            );
+        }
+    }
+
+    public AuthResponseDto refreshToken(String refreshToken) {
+        try {
+            String email = jwtService.extractUsername(refreshToken);
+            MedVaultUserDetails userDetails =
+                    (MedVaultUserDetails) MedVaultUserDetailsService.loadUserByUsername(email);
+
+            if (jwtService.isValidRefreshToken(refreshToken)) {
+                String newAccessToken = jwtService.generateAccessToken(userDetails);
+
+                return AuthResponseDto.builder()
+                        .accessToken(newAccessToken)
+                        .refreshToken(refreshToken)
+                        .userId(userDetails.getUserId())
+                        .email(userDetails.getEmail())
+                        .role(userDetails.getRole())
+                        .expiresIn(jwtService.getExpirationTime())
+                        .issuedAt(System.currentTimeMillis())
+                        .build();
+            }
+            throw new BadCredentialsException("Invalid refresh token");
+        } catch (Exception e) {
+            log.error("Token refresh failed", e);
+            throw new BadCredentialsException("Token refresh failed");
+        }
+    }
+
+    public AuthResponseDto verifyMFA(MFAVerificationRequestDto request) {
+        MedVaultUserDetails userDetails =
+                (MedVaultUserDetails) MedVaultUserDetailsService.loadUserByUsername(request.getEmail());
+
+        if (mfaService.verifyMFACode(userDetails.getUserId(), request.getMfaCode())) {
+            String accessToken = jwtService.generateAccessToken(userDetails);
+            String refreshToken = jwtService.generateRefreshToken(userDetails);
+
+            return AuthResponseDto.builder()
+                    .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .userId(userDetails.getUserId())
+                    .email(userDetails.getEmail())
+                    .role(userDetails.getRole())
+                    .mfaVerified(true)
+                    .expiresIn(jwtService.getExpirationTime())
+                    .issuedAt(System.currentTimeMillis())
+                    .build();
+        }
+        throw new BadCredentialsException("Invalid MFA code");
+    }
+
+    public void initiatePasswordReset(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            String resetToken = jwtService.generatePasswordResetToken(email);
+            // TODO: Send email with reset link
+            log.info("Password reset initiated for: {}", email);
+            auditLogService.logActivity(user.getId(), "PASSWORD_RESET_REQUESTED", "SYSTEM");
+        });
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordDto dto) {
+        if (!dto.isPasswordConfirmed()) {
+            throw new ValidationException("Passwords do not match");
+        }
+
+        if (!passwordValidationService.isValidPassword(dto.getNewPassword())) {
+            throw new WeakPasswordException("Password does not meet security requirements");
+        }
+
+        String email = jwtService.extractUsername(dto.getResetToken());
+        userRepository.findByEmail(email).ifPresent(user -> {
+            user.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
+            userRepository.save(user);
+            log.info("Password reset successful for: {}", email);
+            auditLogService.logActivity(user.getId(), "PASSWORD_RESET_COMPLETED", "SYSTEM");
+        });
+    }
+
 }
 

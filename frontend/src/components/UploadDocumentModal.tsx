@@ -98,6 +98,11 @@ export default function UploadDocumentModal({
     setUploading(true);
 
     try {
+      console.log('=== Document Upload Debug ===');
+      console.log('Access Token:', localStorage.getItem('accessToken'));
+      console.log('User ID:', localStorage.getItem('userId'));
+      console.log('User Role:', localStorage.getItem('userRole'));
+      
       if (!supabase) {
         throw new Error("Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file");
       }
@@ -112,6 +117,8 @@ export default function UploadDocumentModal({
         "_"
       )}.${fileExt}`;
 
+      console.log('Uploading to Supabase:', { fileName, fileSize: selectedFile.size, fileType: selectedFile.type });
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("medical-documents")
         .upload(fileName, selectedFile, {
@@ -120,22 +127,30 @@ export default function UploadDocumentModal({
         });
 
       if (uploadError) throw uploadError;
+      console.log('Supabase upload successful:', uploadData);
 
       // Step 2: Get public URL
       const { data: urlData } = supabase.storage
         .from("medical-documents")
         .getPublicUrl(fileName);
 
+      console.log('Public URL generated:', urlData.publicUrl);
+
       // Step 3: Send to Spring Boot API
       setUploadProgress("Processing document with AI...");
+      const payload = {
+        title: documentTitle,
+        fileUrl: urlData.publicUrl,
+        fileName: fileName,
+      };
+      console.log('Sending to backend API:', payload);
+      
       const response = await apiClient.post<ProcessedDocument>(
         "/api/v1/documents/upload",
-        {
-          title: documentTitle,
-          fileUrl: urlData.publicUrl,
-          fileName: fileName,
-        }
+        payload
       );
+      
+      console.log('Backend response:', response.data);
 
       toast({
         title: "Upload successful!",
@@ -152,7 +167,12 @@ export default function UploadDocumentModal({
       // Refresh documents list
       onDocumentAdded?.();
     } catch (error: any) {
-      console.error("Upload error:", error);
+      console.error("=== Upload Error ===");
+      console.error("Error object:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      console.error("Error message:", error.message);
+      
       toast({
         title: "Upload failed",
         description:
