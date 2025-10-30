@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
@@ -81,4 +80,10 @@ public class PatientRegistrationDto {
 
     @AssertTrue(message = "You must accept the privacy policy")
     private Boolean privacyPolicyAccepted;
+
+    // Validate that password and confirmPassword match
+    public boolean isPasswordConfirmed() {
+        return password != null && password.equals(confirmPassword);
+    }
+
 }
