@@ -1,6 +1,7 @@
 package com.HackPro.MedVault.controller;
 
 import com.HackPro.MedVault.exceptions.DuplicateResourceException;
+import com.HackPro.MedVault.exceptions.ResourceNotFoundException;
 import com.HackPro.MedVault.exceptions.ValidationException;
 import com.HackPro.MedVault.exceptions.WeakPasswordException;
 import org.springframework.http.HttpStatus;
@@ -47,4 +48,13 @@ public class ErrorController {
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Resource Not Found");
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
 }
