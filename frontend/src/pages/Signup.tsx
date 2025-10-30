@@ -76,9 +76,7 @@ const step3PatientSchema = z.object({
   chronicConditions: z.string().optional(),
   address: z.string().min(1, "Address required"),
   emergencyContactName: z.string().min(1, "Emergency contact name required"),
-  emergencyContactPhone: z
-    .string()
-    .min(10, "Valid emergency phone required"),
+  emergencyContactPhone: z.string().min(10, "Valid emergency phone required"),
   termsAccepted: z.boolean().refine((val) => val === true, {
     message: "You must accept the terms",
   }),
@@ -205,8 +203,7 @@ export default function Signup() {
     } catch (error: any) {
       toast({
         title: "Registration failed",
-        description:
-          error.response?.data?.message || "Something went wrong",
+        description: error.response?.data?.message || "Something went wrong",
         variant: "destructive",
       });
     }
@@ -239,8 +236,7 @@ export default function Signup() {
     } catch (error: any) {
       toast({
         title: "Registration failed",
-        description:
-          error.response?.data?.message || "Something went wrong",
+        description: error.response?.data?.message || "Something went wrong",
         variant: "destructive",
       });
     }
@@ -415,7 +411,9 @@ export default function Signup() {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First Name <span className="text-destructive">*</span></FormLabel>
+                        <FormLabel>
+                          First Name <span className="text-destructive">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="Jane" {...field} />
                         </FormControl>
@@ -429,7 +427,9 @@ export default function Signup() {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last Name <span className="text-destructive">*</span></FormLabel>
+                        <FormLabel>
+                          Last Name <span className="text-destructive">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="Doe" {...field} />
                         </FormControl>
@@ -445,7 +445,10 @@ export default function Signup() {
                     name="phoneNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number <span className="text-destructive">*</span></FormLabel>
+                        <FormLabel>
+                          Phone Number{" "}
+                          <span className="text-destructive">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="tel"
@@ -463,7 +466,10 @@ export default function Signup() {
                     name="dateOfBirth"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Date of Birth <span className="text-destructive">*</span></FormLabel>
+                        <FormLabel>
+                          Date of Birth{" "}
+                          <span className="text-destructive">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />
                         </FormControl>
@@ -479,7 +485,9 @@ export default function Signup() {
                     name="gender"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Gender <span className="text-destructive">*</span></FormLabel>
+                        <FormLabel>
+                          Gender <span className="text-destructive">*</span>
+                        </FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
@@ -505,7 +513,10 @@ export default function Signup() {
                     name="bloodGroup"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Blood Group <span className="text-destructive">*</span></FormLabel>
+                        <FormLabel>
+                          Blood Group{" "}
+                          <span className="text-destructive">*</span>
+                        </FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
@@ -538,7 +549,10 @@ export default function Signup() {
                   name="aadhaarNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Aadhaar Number <span className="text-destructive">*</span></FormLabel>
+                      <FormLabel>
+                        Aadhaar Number{" "}
+                        <span className="text-destructive">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="text"
@@ -593,7 +607,9 @@ export default function Signup() {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address <span className="text-destructive">*</span></FormLabel>
+                      <FormLabel>
+                        Address <span className="text-destructive">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="123 Main Street, City, State, PIN"
@@ -611,7 +627,10 @@ export default function Signup() {
                     name="emergencyContactName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Emergency Contact Name <span className="text-destructive">*</span></FormLabel>
+                        <FormLabel>
+                          Emergency Contact Name{" "}
+                          <span className="text-destructive">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="John Doe" {...field} />
                         </FormControl>
@@ -625,7 +644,10 @@ export default function Signup() {
                     name="emergencyContactPhone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Emergency Contact Phone <span className="text-destructive">*</span></FormLabel>
+                        <FormLabel>
+                          Emergency Contact Phone{" "}
+                          <span className="text-destructive">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="tel"
@@ -811,12 +833,11 @@ export default function Signup() {
                   name="hospitalAffiliation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Hospital/Clinic Affiliation (Optional)</FormLabel>
+                      <FormLabel>
+                        Hospital/Clinic Affiliation (Optional)
+                      </FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="City General Hospital"
-                          {...field}
-                        />
+                        <Input placeholder="City General Hospital" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

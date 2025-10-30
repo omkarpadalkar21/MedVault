@@ -106,7 +106,8 @@ const LoginPage = () => {
         setUserEmail(values.email);
         toast({
           title: "MFA Required",
-          description: "Please enter the 6-digit code sent to your registered method.",
+          description:
+            "Please enter the 6-digit code sent to your registered method.",
         });
       } else {
         // No MFA - login successful
