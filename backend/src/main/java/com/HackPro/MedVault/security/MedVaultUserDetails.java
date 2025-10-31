@@ -122,11 +122,11 @@ public class MedVaultUserDetails implements UserDetails {
     public boolean isEnabled() {
         // Account is enabled if:
         // 1. User is active (accountNonLocked)
-        // 2. For doctors: must be verified
+        // 2. For doctors: must NOT be rejected (pending and verified are allowed)
         // 3. MFA must be verified if enabled
         if (role == UserRole.DOCTOR) {
             return accountNonLocked &&
-                    verificationStatus == VerificationStatus.VERIFIED &&
+                    verificationStatus != VerificationStatus.REJECTED &&
                     (!mfaEnabled || mfaVerified);
         }
         return accountNonLocked && (!mfaEnabled || mfaVerified);

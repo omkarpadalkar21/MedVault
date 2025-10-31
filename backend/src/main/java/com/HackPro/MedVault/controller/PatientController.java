@@ -45,4 +45,18 @@ public class PatientController {
         PatientResponseDto profile = patientService.getPatientProfile(patientId);
         return ResponseEntity.ok(profile);
     }
+
+    /**
+     * Get patient profile by Aadhaar number (Doctor only)
+     * Allows doctors to search for patients using their Aadhaar number
+     *
+     * @param aadhaarNumber Patient's Aadhaar number (12 digits)
+     * @return PatientResponseDto
+     */
+    @GetMapping("/search/aadhaar/{aadhaarNumber}")
+    @PreAuthorize("hasRole('DOCTOR')")
+    public ResponseEntity<PatientResponseDto> getPatientByAadhaar(@PathVariable String aadhaarNumber) {
+        PatientResponseDto profile = patientService.getPatientByAadhaar(aadhaarNumber);
+        return ResponseEntity.ok(profile);
+    }
 }

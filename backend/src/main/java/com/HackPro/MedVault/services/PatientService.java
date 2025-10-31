@@ -13,4 +13,12 @@ public interface PatientService {
      * @return PatientResponseDto
      */
     PatientResponseDto getPatientProfile(UUID userId);
+    
+    /**
+     * Get patient profile by Aadhaar number
+     *
+     * @param aadhaarNumber Patient's Aadhaar number (plain text)
+     * @return PatientResponseDto
+     */
+    PatientResponseDto getPatientByAadhaar(String aadhaarNumber);
 }

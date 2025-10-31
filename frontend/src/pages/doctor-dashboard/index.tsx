@@ -4,6 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/components/ui/use-toast";
+import { Search, Calendar, MessageSquare, Settings, ChevronDown, FileText, Activity, ChevronRight, ChevronLeft, Shield, Loader2, User, Phone, Mail, MapPin, Droplet, AlertCircle } from "lucide-react";
+import axios from "axios";
+
+const API_BASE_URL = "http://localhost:8080";
 import { Search, Calendar, MessageSquare, Settings, ChevronDown, FileText, Activity, ChevronRight, ChevronLeft, Shield, LogOut, KeyRound, Lock, ShieldCheck, ChevronDown as ChevronDownIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -19,6 +24,26 @@ interface Patient {
   dob?: string;
   aadhaar: string;
   notes?: string;
+}
+
+interface PatientDetails {
+  id: string;
+  email: string;
+  phoneNumber: string;
+  isActive: boolean;
+  mfaEnabled: boolean;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  gender: string;
+  bloodGroup: string;
+  address: string;
+  allergies?: string;
+  chronicConditions?: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Schedule {
@@ -46,6 +71,9 @@ export default function DoctorDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ehr");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [patientDetails, setPatientDetails] = useState<PatientDetails | null>(null);
+  const { toast } = useToast();
 
   const handleMFASettings = async () => {
     try {
@@ -146,6 +174,98 @@ export default function DoctorDashboard() {
     },
   ];
 
+  const handleSearchPatient = async () => {
+    // Validate Aadhaar number
+    if (!searchQuery.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter an Aadhaar number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Remove any spaces or dashes from Aadhaar
+    const cleanAadhaar = searchQuery.replace(/[\s-]/g, "");
+
+    // Validate 12 digits
+    if (!/^\d{12}$/.test(cleanAadhaar)) {
+      toast({
+        title: "Invalid Aadhaar",
+        description: "Aadhaar number must be 12 digits",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSearching(true);
+    setPatientDetails(null);
+
+    try {
+      const token = localStorage.getItem("accessToken");
+      
+      if (!token) {
+        toast({
+          title: "Authentication Required",
+          description: "Please login to search for patients",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await axios.get<PatientDetails>(
+        `${API_BASE_URL}/api/v1/patients/search/aadhaar/${cleanAadhaar}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setPatientDetails(response.data);
+      toast({
+        title: "Patient Found",
+        description: `Found patient: ${response.data.firstName} ${response.data.lastName}`,
+      });
+    } catch (error: any) {
+      console.error("Patient search error:", error);
+      
+      if (error.response?.status === 404) {
+        toast({
+          title: "Patient Not Found",
+          description: "No patient found with the provided Aadhaar number",
+          variant: "destructive",
+        });
+      } else if (error.response?.status === 403) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to search for patients",
+          variant: "destructive",
+        });
+      } else if (error.response?.status === 401) {
+        toast({
+          title: "Session Expired",
+          description: "Please login again",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Search Failed",
+          description: error.response?.data?.message || "Something went wrong",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearchPatient();
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
@@ -243,19 +363,142 @@ export default function DoctorDashboard() {
                 <CardTitle className="text-2xl">Patient Lookup</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                    <Input
-                      placeholder="Enter Patient Aadhaar or PAN Card Number"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                      <Input
+                        placeholder="Enter Patient Aadhaar Number (12 digits)"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        className="pl-10"
+                        disabled={isSearching}
+                        maxLength={14}
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleSearchPatient}
+                      disabled={isSearching}
+                      className="bg-[#00BFA5] hover:bg-[#00A892] text-white px-6"
+                    >
+                      {isSearching ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Searching...
+                        </>
+                      ) : (
+                        "Search Patient"
+                      )}
+                    </Button>
                   </div>
-                  <Button className="bg-[#00BFA5] hover:bg-[#00A892] text-white px-6">
-                    Search Patient
-                  </Button>
+
+                  {/* Patient Details Card */}
+                  {patientDetails && (
+                    <Card className="border-2 border-[#00BFA5]">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <User className="w-5 h-5 text-[#00BFA5]" />
+                          Patient Details
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* Basic Info */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Full Name</p>
+                            <p className="font-medium">{patientDetails.firstName} {patientDetails.lastName}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Date of Birth</p>
+                            <p className="font-medium">{new Date(patientDetails.dateOfBirth).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Gender</p>
+                            <p className="font-medium">{patientDetails.gender}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Droplet className="w-4 h-4 text-red-500" />
+                            <div>
+                              <p className="text-sm text-muted-foreground">Blood Group</p>
+                              <p className="font-medium">{patientDetails.bloodGroup.replace('_', ' ')}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Contact Info */}
+                        <div className="border-t pt-4 space-y-3">
+                          <div className="flex items-start gap-2">
+                            <Mail className="w-4 h-4 text-muted-foreground mt-0.5" />
+                            <div>
+                              <p className="text-sm text-muted-foreground">Email</p>
+                              <p className="font-medium text-sm">{patientDetails.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
+                            <div>
+                              <p className="text-sm text-muted-foreground">Phone</p>
+                              <p className="font-medium">{patientDetails.phoneNumber}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
+                            <div>
+                              <p className="text-sm text-muted-foreground">Address</p>
+                              <p className="font-medium text-sm">{patientDetails.address}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Medical Info */}
+                        {(patientDetails.allergies || patientDetails.chronicConditions) && (
+                          <div className="border-t pt-4 space-y-3">
+                            {patientDetails.allergies && (
+                              <div className="flex items-start gap-2">
+                                <AlertCircle className="w-4 h-4 text-orange-500 mt-0.5" />
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Allergies</p>
+                                  <p className="font-medium text-sm">{patientDetails.allergies}</p>
+                                </div>
+                              </div>
+                            )}
+                            {patientDetails.chronicConditions && (
+                              <div className="flex items-start gap-2">
+                                <Activity className="w-4 h-4 text-blue-500 mt-0.5" />
+                                <div>
+                                  <p className="text-sm text-muted-foreground">Chronic Conditions</p>
+                                  <p className="font-medium text-sm">{patientDetails.chronicConditions}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Emergency Contact */}
+                        <div className="border-t pt-4 space-y-2">
+                          <p className="text-sm font-medium text-muted-foreground">Emergency Contact</p>
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium">{patientDetails.emergencyContactName}</p>
+                            <p className="text-sm text-muted-foreground">{patientDetails.emergencyContactPhone}</p>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 pt-2">
+                          <Button className="flex-1 bg-[#00BFA5] hover:bg-[#00A892]">
+                            View Full EHR
+                          </Button>
+                          <Button variant="outline" className="flex-1">
+                            Schedule Appointment
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </CardContent>
             </Card>
