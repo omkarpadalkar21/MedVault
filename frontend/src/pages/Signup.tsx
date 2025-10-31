@@ -32,10 +32,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/components/ui/use-toast";
-import axios from "axios";
-
-// API Base URL
-const API_BASE_URL = "http://localhost:8080";
+import apiClient from "@/services/api";
 
 // Step 1: Account creation schema
 const step1Schema = z
@@ -85,14 +82,15 @@ const step3PatientSchema = z.object({
   }),
 });
 
-// Step 3: Healthcare Provider details schema (temporary)
+// Step 3: Healthcare Provider details schema
 const step3ProviderSchema = z.object({
   firstName: z.string().min(1, "First name required"),
   lastName: z.string().min(1, "Last name required"),
   phoneNumber: z.string().min(10, "Valid phone number required"),
   specialization: z.string().min(1, "Specialization required"),
   licenseNumber: z.string().min(1, "License number required"),
-  hospitalAffiliation: z.string().optional(),
+  licenseExpiryDate: z.string().min(1, "License expiry date required"),
+  hospitalAffiliation: z.string().min(1, "Hospital affiliation required"),
   yearsOfExperience: z.string().min(1, "Years of experience required"),
   address: z.string().min(1, "Address required"),
   termsAccepted: z.boolean().refine((val) => val === true, {
@@ -157,6 +155,7 @@ export default function Signup() {
       phoneNumber: "",
       specialization: "",
       licenseNumber: "",
+      licenseExpiryDate: "",
       hospitalAffiliation: "",
       yearsOfExperience: "",
       address: "",
@@ -182,17 +181,14 @@ export default function Signup() {
     if (!step1Data || !step2Data) return;
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/v1/auth/register/patient`,
-        {
-          // Step 1 data
-          email: step1Data.email,
-          password: step1Data.password,
-          confirmPassword: step1Data.confirmPassword,
-          // Step 3 data
-          ...values,
-        }
-      );
+      const response = await apiClient.post("/api/v1/auth/register/patient", {
+        // Step 1 data
+        email: step1Data.email,
+        password: step1Data.password,
+        confirmPassword: step1Data.confirmPassword,
+        // Step 3 data
+        ...values,
+      });
 
       toast({
         title: "Account created",
@@ -213,23 +209,28 @@ export default function Signup() {
     if (!step1Data || !step2Data) return;
 
     try {
-      // Temporary: Using patient endpoint for healthcare providers
-      // TODO: Update this when healthcare provider endpoint is ready
-      const response = await axios.post(
-        `${API_BASE_URL}/api/v1/auth/register/healthcare-provider`,
-        {
-          // Step 1 data
-          email: step1Data.email,
-          password: step1Data.password,
-          confirmPassword: step1Data.confirmPassword,
-          // Step 3 data
-          ...values,
-        }
-      );
+      const response = await apiClient.post("/api/v1/auth/register/doctor", {
+        // Step 1 data
+        email: step1Data.email,
+        password: step1Data.password,
+        confirmPassword: step1Data.confirmPassword,
+        // Step 3 data
+        firstName: values.firstName,
+        lastName: values.lastName,
+        phoneNumber: values.phoneNumber,
+        specialization: values.specialization,
+        licenseNumber: values.licenseNumber,
+        licenseExpiryDate: values.licenseExpiryDate,
+        hospitalAffiliation: values.hospitalAffiliation,
+        yearsOfExperience: parseInt(values.yearsOfExperience),
+        address: values.address,
+        termsAccepted: values.termsAccepted,
+        privacyPolicyAccepted: values.privacyPolicyAccepted,
+      });
 
       toast({
         title: "Account created",
-        description: response.data.message || "Welcome to MedVault!",
+        description: response.data.message || "Welcome to MedVault, Doctor!",
       });
 
       navigate("/login");
@@ -251,9 +252,18 @@ export default function Signup() {
               ? "Create your account"
               : step === 2
               ? "Select your role"
-              : "Complete your profile"}
+              : step2Data?.role === "PATIENT"
+              ? "Complete Patient Profile"
+              : "Complete Provider Profile"}
           </CardTitle>
-          <p className="text-sm text-muted-foreground">Step {step} of 3</p>
+          <p className="text-sm text-muted-foreground">
+            Step {step} of 3{" "}
+            {step === 3
+              ? step2Data?.role === "HEALTHCARE_PROVIDER"
+                ? "(Healthcare Provider)"
+                : "(Patient)"
+              : ""}
+          </p>
         </CardHeader>
         <CardContent>
           {step === 1 ? (
@@ -738,7 +748,9 @@ export default function Signup() {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First Name</FormLabel>
+                        <FormLabel>
+                          First Name <span className="text-destructive">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="Dr. Jane" {...field} />
                         </FormControl>
@@ -752,7 +764,9 @@ export default function Signup() {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last Name</FormLabel>
+                        <FormLabel>
+                          Last Name <span className="text-destructive">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="Doe" {...field} />
                         </FormControl>
@@ -767,7 +781,9 @@ export default function Signup() {
                   name="phoneNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
+                      <FormLabel>
+                        Phone Number <span className="text-destructive">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           type="tel"
@@ -786,7 +802,9 @@ export default function Signup() {
                   name="specialization"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Specialization</FormLabel>
+                      <FormLabel>
+                        Specialization <span className="text-destructive">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Cardiology, Pediatrics, etc."
@@ -804,7 +822,10 @@ export default function Signup() {
                     name="licenseNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Medical License Number</FormLabel>
+                        <FormLabel>
+                          Medical License Number{" "}
+                          <span className="text-destructive">*</span>
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="MCI-12345" {...field} />
                         </FormControl>
@@ -815,12 +836,15 @@ export default function Signup() {
 
                   <FormField
                     control={step3ProviderForm.control}
-                    name="yearsOfExperience"
+                    name="licenseExpiryDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Years of Experience</FormLabel>
+                        <FormLabel>
+                          License Expiry Date{" "}
+                          <span className="text-destructive">*</span>
+                        </FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="5" {...field} />
+                          <Input type="date" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -828,21 +852,42 @@ export default function Signup() {
                   />
                 </div>
 
-                <FormField
-                  control={step3ProviderForm.control}
-                  name="hospitalAffiliation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Hospital/Clinic Affiliation (Optional)
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="City General Hospital" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={step3ProviderForm.control}
+                    name="yearsOfExperience"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Years of Experience{" "}
+                          <span className="text-destructive">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="5" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={step3ProviderForm.control}
+                    name="hospitalAffiliation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Hospital/Clinic Affiliation{" "}
+                          <span className="text-destructive">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="City General Hospital" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
 
                 {/* Contact Information */}
                 <FormField
@@ -850,7 +895,10 @@ export default function Signup() {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Clinic/Practice Address</FormLabel>
+                      <FormLabel>
+                        Clinic/Practice Address{" "}
+                        <span className="text-destructive">*</span>
+                      </FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="123 Medical Street, City, State, PIN"

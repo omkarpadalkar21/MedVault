@@ -1,8 +1,16 @@
 import { useState } from "react";
+import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import ManageAccess from "./ManageAccess";
 import Documents from "./Documents";
 import Imaging from "./Imaging";
@@ -28,6 +36,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  KeyRound,
+  Lock,
+  ShieldCheck,
+  ChevronDown as ChevronDownIcon,
 } from "lucide-react";
 
 interface DiagnosisItem {
@@ -59,8 +71,58 @@ interface SystemData {
   iconColor: string;
 }
 
+const API_BASE_URL = "http://localhost:8080";
+
 export default function PatientDashboard() {
+  const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const handleMFASettings = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/auth/verify-mfa`);
+      console.log("MFA verification response:", response.data);
+      // Handle MFA settings logic here
+    } catch (error) {
+      console.error("MFA verification error:", error);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/auth/forgot-password`);
+      console.log("Forgot password response:", response.data);
+      // Handle forgot password logic here
+    } catch (error) {
+      console.error("Forgot password error:", error);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/auth/reset-password`);
+      console.log("Reset password response:", response.data);
+      // Handle reset password logic here
+    } catch (error) {
+      console.error("Reset password error:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/auth/logout`);
+      console.log("Logout response:", response.data);
+      // Clear any stored tokens/session data
+      localStorage.removeItem('token');
+      sessionStorage.clear();
+      // Redirect to landing page
+      navigate('/');
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if API fails, redirect to landing page
+      navigate('/');
+    }
+  };
+
   const [activeDocCategory, setActiveDocCategory] = useState("All Documents");
   const [activeSystem, setActiveSystem] = useState<string>("Circulatory");
   const [activeView, setActiveView] = useState<string>("overview");
@@ -242,14 +304,14 @@ export default function PatientDashboard() {
 
         {/* Logo */}
         <div className="p-6">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             {!isSidebarCollapsed && (
               <Shield className="w-8 h-8 text-red-500"  />
             )}
             <div className="text-xl font-semibold">
               {isSidebarCollapsed ? "M+" : "MedVault"}
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Patient Info */}
@@ -261,10 +323,40 @@ export default function PatientDashboard() {
                   PM
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h3 className="font-semibold">Prescott MacCaffery</h3>
-                <p className="text-xs text-gray-400">Patient ID: 14838</p>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1 flex-1">
+                    <div>
+                      <h3 className="font-semibold">Prescott MacCaffery</h3>
+                      <p className="text-xs text-gray-400">Patient ID: 14838</p>
+                    </div>
+                    <ChevronDownIcon className="w-4 h-4 ml-auto" />
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="start">
+                  <DropdownMenuItem 
+                    className="cursor-pointer hover:bg-[#DC143C] hover:text-white focus:bg-[#DC143C] focus:text-white"
+                    onClick={handleMFASettings}
+                  >
+                    <ShieldCheck className="w-4 h-4 mr-2" />
+                    <span>MFA Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="cursor-pointer hover:bg-[#DC143C] hover:text-white focus:bg-[#DC143C] focus:text-white"
+                    onClick={handleForgotPassword}
+                  >
+                    <KeyRound className="w-4 h-4 mr-2" />
+                    <span>Forgot Password</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="cursor-pointer hover:bg-[#DC143C] hover:text-white focus:bg-[#DC143C] focus:text-white"
+                    onClick={handleResetPassword}
+                  >
+                    <Lock className="w-4 h-4 mr-2" />
+                    <span>Reset Password</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
@@ -354,7 +446,10 @@ export default function PatientDashboard() {
             <button className="p-2 hover:bg-muted rounded-lg">
               <Settings className="w-5 h-5" />
             </button>
-            <button className="p-2 hover:bg-muted rounded-lg">
+            <button 
+              className="p-2 hover:bg-muted rounded-lg"
+              onClick={handleLogout}
+            >
               <LogOut className="w-5 h-5" />
             </button>
           </div>

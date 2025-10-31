@@ -56,7 +56,8 @@ public class MedVaultSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers(
-                                "/api/v1/auth/register/**",
+                                "/api/v1/auth/register/patient",
+                                "/api/v1/auth/register/doctor",
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/auth/reset-password",
@@ -114,7 +115,7 @@ public class MedVaultSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH"));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-MFA-Token"));
         config.setExposedHeaders(Arrays.asList("X-Total-Count", "X-Auth-Token"));

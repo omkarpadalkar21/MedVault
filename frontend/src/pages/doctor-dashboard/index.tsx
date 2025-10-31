@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,14 @@ import { Search, Calendar, MessageSquare, Settings, ChevronDown, FileText, Activ
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:8080";
+import { Search, Calendar, MessageSquare, Settings, ChevronDown, FileText, Activity, ChevronRight, ChevronLeft, Shield, LogOut, KeyRound, Lock, ShieldCheck, ChevronDown as ChevronDownIcon } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Patient {
   id: string;
@@ -55,13 +64,62 @@ interface Notification {
   type: "document" | "activity";
 }
 
+const API_BASE_URL = "http://localhost:8080";
+
 export default function DoctorDashboard() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ehr");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [patientDetails, setPatientDetails] = useState<PatientDetails | null>(null);
   const { toast } = useToast();
+
+  const handleMFASettings = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/auth/verify-mfa`);
+      console.log("MFA verification response:", response.data);
+      // Handle MFA settings logic here
+    } catch (error) {
+      console.error("MFA verification error:", error);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/auth/forgot-password`);
+      console.log("Forgot password response:", response.data);
+      // Handle forgot password logic here
+    } catch (error) {
+      console.error("Forgot password error:", error);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/auth/reset-password`);
+      console.log("Reset password response:", response.data);
+      // Handle reset password logic here
+    } catch (error) {
+      console.error("Reset password error:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/auth/logout`);
+      console.log("Logout response:", response.data);
+      // Clear any stored tokens/session data
+      localStorage.removeItem('token');
+      sessionStorage.clear();
+      // Redirect to landing page
+      navigate('/');
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if API fails, redirect to landing page
+      navigate('/');
+    }
+  };
 
   const recentPatients: Patient[] = [
     { id: "1", name: "John Doe", dob: "DOB: 10/11/1990", aadhaar: "Aadhaar: XXXX-XXXX-5634" },
@@ -232,14 +290,14 @@ export default function DoctorDashboard() {
           )}
         </button>
 
-        <div className={`flex items-center gap-2 mb-8 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
+        <Link to="/" className={`flex items-center gap-2 mb-8 hover:opacity-80 transition-opacity ${isSidebarCollapsed ? 'justify-center' : ''}`}>
           {!isSidebarCollapsed && (
             <Shield className="w-8 h-8 text-red-500" />
           )}
           <div className={`text-xl font-semibold ${isSidebarCollapsed ? '' : ''}`}>
             {isSidebarCollapsed ? "M+" : "MedVault"}
           </div>
-        </div>
+        </Link>
 
         {/* Doctor Profile */}
         <div className={`flex flex-col items-center mb-8 ${isSidebarCollapsed ? 'space-y-2' : ''}`}>
@@ -259,13 +317,30 @@ export default function DoctorDashboard() {
         <nav className="flex-1 space-y-2">
           <button className={`w-full text-left px-4 py-3 rounded-lg bg-white/20 hover:bg-white/30 transition-colors flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
             <Calendar className="w-5 h-5 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>Dashboard / Patient Lookup</span>}
+            {!isSidebarCollapsed && <span>Patient Lookup</span>}
           </button>
         </nav>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8">
+      <main className="flex-1 flex flex-col">
+        {/* Header */}
+        <header className="bg-white border-b px-8 py-4 flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">Doctor Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <button className="p-2 hover:bg-muted rounded-lg">
+              <Settings className="w-5 h-5" />
+            </button>
+            <button 
+              className="p-2 hover:bg-muted rounded-lg"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-auto p-8">
         {/* Header Tabs */}
         <div className="flex gap-8 mb-8 border-b">
           <button
@@ -465,6 +540,7 @@ export default function DoctorDashboard() {
               </CardContent>
             </Card>
           </div>
+        </div>
         </div>
       </main>
     </div>
