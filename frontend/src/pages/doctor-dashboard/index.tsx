@@ -1,10 +1,17 @@
 import { useState } from "react";
+import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Calendar, MessageSquare, Settings, ChevronDown, FileText, Activity, ChevronRight, ChevronLeft, Shield, LogOut } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Search, Calendar, MessageSquare, Settings, ChevronDown, FileText, Activity, ChevronRight, ChevronLeft, Shield, LogOut, KeyRound, Lock, ShieldCheck, ChevronDown as ChevronDownIcon } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Patient {
   id: string;
@@ -32,10 +39,59 @@ interface Notification {
   type: "document" | "activity";
 }
 
+const API_BASE_URL = "http://localhost:8080";
+
 export default function DoctorDashboard() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("ehr");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const handleMFASettings = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/auth/verify-mfa`);
+      console.log("MFA verification response:", response.data);
+      // Handle MFA settings logic here
+    } catch (error) {
+      console.error("MFA verification error:", error);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/auth/forgot-password`);
+      console.log("Forgot password response:", response.data);
+      // Handle forgot password logic here
+    } catch (error) {
+      console.error("Forgot password error:", error);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/auth/reset-password`);
+      console.log("Reset password response:", response.data);
+      // Handle reset password logic here
+    } catch (error) {
+      console.error("Reset password error:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/v1/auth/logout`);
+      console.log("Logout response:", response.data);
+      // Clear any stored tokens/session data
+      localStorage.removeItem('token');
+      sessionStorage.clear();
+      // Redirect to landing page
+      navigate('/');
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if API fails, redirect to landing page
+      navigate('/');
+    }
+  };
 
   const recentPatients: Patient[] = [
     { id: "1", name: "John Doe", dob: "DOB: 10/11/1990", aadhaar: "Aadhaar: XXXX-XXXX-5634" },
@@ -141,7 +197,7 @@ export default function DoctorDashboard() {
         <nav className="flex-1 space-y-2">
           <button className={`w-full text-left px-4 py-3 rounded-lg bg-white/20 hover:bg-white/30 transition-colors flex items-center gap-3 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
             <Calendar className="w-5 h-5 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>Dashboard / Patient Lookup</span>}
+            {!isSidebarCollapsed && <span>Patient Lookup</span>}
           </button>
         </nav>
       </aside>
@@ -155,11 +211,12 @@ export default function DoctorDashboard() {
             <button className="p-2 hover:bg-muted rounded-lg">
               <Settings className="w-5 h-5" />
             </button>
-            <Link to="/">
-              <button className="p-2 hover:bg-muted rounded-lg">
-                <LogOut className="w-5 h-5" />
-              </button>
-            </Link>
+            <button 
+              className="p-2 hover:bg-muted rounded-lg"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </header>
 
